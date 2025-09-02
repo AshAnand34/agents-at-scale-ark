@@ -1,14 +1,58 @@
 name: 'Provision infrastructure - AWS'
 
 on:
+  push:
+    branches: ['main']
+    paths:
+        - 'infrastructure/aws/**'
+        - '.github/workflows/terraform-apply-aws.yaml'
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: write
+  checks: write
+  deployments: write
+  statuses: write
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
+  tfe-apply:
+    runs-on: ${{vars.GITHUB_RUNNER_LABEL}}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref }}
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_GH_OIDC_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-duration-seconds: 1200
 
-      - name: Run a one-line script
-        run: echo Placeholder
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: '1.7.6'
+
+      - name: Terraform Init (S3 backend)
+        id: init
+        working-directory: ./infrastructure/providers/aws
+        run: |
+          set -euo pipefail
+          backend_args=(
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"
+            -backend-config="key=${{ secrets.TF_STATE_KEY }}"
+            -backend-config="region=${{ vars.AWS_REGION }}"
+            -backend-config="encrypt=true"
+          )
+          if [ -n "${{ secrets.TF_STATE_DYNAMODB_TABLE }}" ]; then
+            backend_args+=(-backend-config="dynamodb_table=${{ secrets.TF_STATE_DYNAMODB_TABLE }}")
+          fi
+          terraform init -input=false "${backend_args[@]}"
+
+      - name: Terraform Apply
+        id: apply
+        working-directory: ./infrastructure/providers/aws
+        run: terraform apply -input=false -auto-approve
