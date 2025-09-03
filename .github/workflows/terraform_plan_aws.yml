@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   tfe-plan:
-    runs-on: ${{vars.GITHUB_RUNNER_LABEL}}
+    runs-on: ${{vars.GH_RUNNER_LABEL}}
     outputs:
       TF_PLAN_ID: ${{ steps.reference-plan-output.outputs.TF_PLAN_ID }}
       TF_PLAN_STATUS: ${{ steps.reference-plan-output.outputs.TF_PLAN_STATUS }}
