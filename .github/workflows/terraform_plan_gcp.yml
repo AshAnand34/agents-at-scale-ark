@@ -1,14 +1,93 @@
 name: 'Plan infrastructure - GCP'
 
 on:
+  pull_request:
+    types: [opened, reopened, edited, synchronize]
+    branches: ['main']
+    paths:
+      - 'infrastructure/providers/gcp/**'
+      - '.github/workflows/terraform_plan_gcp.yml'
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
+  tfe-plan:
+    runs-on: ${{ vars.GH_RUNNER_LABEL }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Run a one-line script
-        run: echo Placeholder
+      - name: Authenticate to GCP (Workload Identity)
+        uses: google-github-actions/auth@v1
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: '1.13.1'
+
+      - name: Terraform Init (GCS backend)
+        id: init
+        run: |
+          set -euo pipefail
+          backend_args=(
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET_GCP }}"
+          )
+          if [ -n "${{ secrets.TF_STATE_PREFIX_GCP }}" ]; then
+            backend_args+=(-backend-config="prefix=${{ secrets.TF_STATE_PREFIX_GCP }}")
+          fi
+          if [ -n "${{ vars.GCP_PROJECT_ID }}" ]; then
+            backend_args+=(-backend-config="project=${{ vars.GCP_PROJECT_ID }}")
+          fi
+          terraform init -input=false "${backend_args[@]}"
+
+      - name: Terraform Validate
+        id: validate
+        working-directory: ./infrastructure/providers/gcp
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: ./infrastructure/providers/gcp
+        run: |
+          set -euo pipefail
+          terraform plan -input=false -var="gcp_region=${{ vars.GCP_REGION }}" | tee plan.log 
+
+      - name: Post plan to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const planPath = 'infrastructure/providers/gcp/plan.log';
+            let planText = 'Plan not available';
+            try {
+              planText = fs.readFileSync(planPath, 'utf8');
+            } catch (e) { /* ignore */ }
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const botComment = comments.find(c => c.user.type === 'Bot' && c.body.includes('Terraform Plan Output (GCP)'));
+            const body = `#### Terraform Plan Output (GCP)\n\`\`\`\n${planText}\n\`\`\``;
+            if (botComment) {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+              });
+            }
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
