@@ -1,13 +1,11 @@
 variable "gcp_region" {
   description = "Target GCP region"
   type        = string
-  default     = "europe-west3"
 }
 
 variable "gcp_project_id" {
   description = "Target GCP project ID"
   type    = string
-  default = "proj-01k2hqw21jzb2"
 }
 
 variable "cluster_name" {
@@ -24,6 +22,5 @@ variable "cluster_version" {
 
 variable "github_oidc_service_account" {
   description = "The name of the GitHub OIDC service account to associate with the GKE cluster"
-  type        = string
-  default     = "github-oidc-sa"    
+  type        = string 
 }

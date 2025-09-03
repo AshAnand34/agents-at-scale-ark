@@ -19,3 +19,8 @@ resource "google_project_iam_member" "member-role" {
   member  = "serviceAccount:${data.google_service_account.github_oidc_sa.email}"
   project = var.gcp_project_id
 }
+
+data "google_service_account" "github_oidc_sa" {
+  project    = var.gcp_project_id
+  account_id = var.github_oidc_service_account
+}
