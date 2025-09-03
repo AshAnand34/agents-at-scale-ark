@@ -100,7 +100,7 @@ resource "google_project_iam_member" "member-role" {
   for_each = toset([
     "roles/container.admin",
     "roles/container.clusterAdmin",
-    "roles/iam.workloadIdentityUser"
+    "roles/compute.viewer"
   ])
   role    = each.key
   member  = "serviceAccount:${google_service_account.github_oidc_sa.email}"
