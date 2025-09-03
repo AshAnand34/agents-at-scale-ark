@@ -7,8 +7,3 @@ locals {
   services_range_name         = "ip-range-services-aas-ark-gke-private"
   subnet_names                = [for subnet_self_link in module.gcp-network.subnets_self_links : split("/", subnet_self_link)[length(split("/", subnet_self_link)) - 1]]
 }
-
-data "google_service_account" "github_oidc_sa" {
-  project    = var.gcp_project_id
-  account_id = var.github_oidc_service_account
-}
