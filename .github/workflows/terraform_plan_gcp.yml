@@ -34,6 +34,7 @@ jobs:
 
       - name: Terraform Init (GCS backend)
         id: init
+        working-directory: ./infrastructure/providers/gcp
         run: |
           set -euo pipefail
           backend_args=(

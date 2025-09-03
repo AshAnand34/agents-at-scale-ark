@@ -122,6 +122,8 @@ Replace `ORG`, `REPO`,  with respective values, to further harden the policy, yo
 ```
 GCP_REGION
 GCP_PROJECT_ID
+GCP_WORKLOAD_IDENTITY_PROVIDER
+GCP_SA_EMAIL
 ```
 - (Placeholder) Organization policies or IAM constraints
 
