@@ -43,8 +43,8 @@ jobs:
           if [ -n "${{ secrets.TF_STATE_PREFIX_GCP }}" ]; then
             backend_args+=(-backend-config="prefix=${{ secrets.TF_STATE_PREFIX_GCP }}")
           fi
-          if [ -n "${{ vars.GCP_PROJECT_ID }}" ]; then
-            backend_args+=(-backend-config="project=${{ vars.GCP_PROJECT_ID }}")
+          if [ -n "${{ secrets.GCP_PROJECT_ID }}" ]; then
+            backend_args+=(-backend-config="project=${{ secrets.GCP_PROJECT_ID }}")
           fi
           terraform init -input=false "${backend_args[@]}"
 

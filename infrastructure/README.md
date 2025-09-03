@@ -96,6 +96,17 @@ resource "google_service_account" "github_oidc_sa" {
   account_id = var.github_oidc_service_account
 }
 
+resource "google_project_iam_member" "member-role" {
+  for_each = toset([
+    "roles/container.admin",
+    "roles/container.clusterAdmin",
+    "roles/iam.workloadIdentityUser"
+  ])
+  role    = each.key
+  member  = "serviceAccount:${google_service_account.github_oidc_sa.email}"
+  project = var.gcp_project_id
+}
+
 module "gcp_gh_oidc" {
   source  = "terraform-google-modules/github-actions-runners/google//modules/gh-oidc"
   version = "~> 4.0"
