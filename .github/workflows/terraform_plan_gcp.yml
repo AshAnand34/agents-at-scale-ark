@@ -58,7 +58,7 @@ jobs:
         working-directory: ./infrastructure/providers/gcp
         run: |
           set -euo pipefail
-          terraform plan -input=false -var="gcp_region=${{ vars.GCP_REGION }}" -var="gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" -var="github_oidc_service_account=$(cut -d'@' -f1 <<<'${{ secrets.GCP_SA_EMAIL }}')" | tee plan.log 
+          terraform plan -input=false -var="gcp_region=${{ vars.GCP_REGION }}" -var="gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" | tee plan.log 
         continue-on-error: true
 
       - uses: actions/github-script@v6

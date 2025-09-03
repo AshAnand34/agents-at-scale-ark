@@ -19,8 +19,3 @@ variable "cluster_version" {
   type        = string
   default     = "1.33"
 }
-
-variable "github_oidc_service_account" {
-  description = "The name of the GitHub OIDC service account to associate with the GKE cluster"
-  type        = string 
-}
