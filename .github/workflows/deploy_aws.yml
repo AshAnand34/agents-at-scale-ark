@@ -83,7 +83,8 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_GH_OIDC_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-duration-seconds: 1200
 
       - name: Update kubeconfig for AWS EKS
         run: |
