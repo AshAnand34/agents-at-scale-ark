@@ -107,7 +107,7 @@ jobs:
           echo "Downloading ARK Helm chart for version: $VERSION"
           
           # Download the specific chart version
-          gh release download "$VERSION" --pattern "ark-${CLEAN_VERSION}.tgz" --repo McK-Internal/agents-at-scale
+          gh release download "$VERSION" --pattern "ark-${CLEAN_VERSION}.tgz" --repo mckinsey/agents-at-scale-ark
           
           echo "Downloaded chart:"
           ls -la ark-${CLEAN_VERSION}.tgz
