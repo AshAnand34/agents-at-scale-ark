@@ -3,6 +3,12 @@ name: 'Deploy - AWS'
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+  pages: write
+  id-token: write
+
 jobs:
   check_version:
     runs-on: ubuntu-24.04
