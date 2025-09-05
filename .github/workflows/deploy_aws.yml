@@ -161,7 +161,9 @@ jobs:
             --set containerRegistry.server=${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }} \
             --set containerRegistry.username=${{ secrets.DOCKER_REGISTRY_USERNAME || github.actor }} \
             --set containerRegistry.password=${{ secrets.DOCKER_REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }} \
-            --set rbac.enable=false \
+            --set rbac.enable=true \
+            --set serviceAccount.create=true \
+            --set serviceAccount.name=ark-controller
             --timeout=5m
             
           # Wait for deployment readiness
