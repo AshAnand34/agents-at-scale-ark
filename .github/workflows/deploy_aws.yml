@@ -146,8 +146,8 @@ jobs:
           kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
       - name: Apply default namespace RBAC separately (not included in Helm chart)
         run: |
-          kubectl apply -f ark/config/rbac/ark_tenant_role.yaml
-          kubectl apply -f ark/config/rbac/ark_tenant_role_binding.yaml
+          kubectl apply -f ark/config/rbac/ark_controller_role.yaml
+          kubectl apply -f ark/config/rbac/ark_controller_role_binding.yaml
 
       - name: Deploy ARK chart to Environment
         run: |
@@ -161,7 +161,7 @@ jobs:
             --set containerRegistry.server=${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }} \
             --set containerRegistry.username=${{ secrets.DOCKER_REGISTRY_USERNAME || github.actor }} \
             --set containerRegistry.password=${{ secrets.DOCKER_REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }} \
-            --set rbac.enable=true \
+            --set rbac.enable=false \
           #  --set serviceAccount.create=true \
           #  --set serviceAccount.name=ark-controller
              --timeout=5m
