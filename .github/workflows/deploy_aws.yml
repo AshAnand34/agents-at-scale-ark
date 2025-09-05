@@ -162,9 +162,7 @@ jobs:
             --set containerRegistry.username=${{ secrets.DOCKER_REGISTRY_USERNAME || github.actor }} \
             --set containerRegistry.password=${{ secrets.DOCKER_REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }} \
             --set rbac.enable=false \
-          #  --set serviceAccount.create=true \
-          #  --set serviceAccount.name=ark-controller
-             --timeout=5m
+            --timeout=5m
             
           # Wait for deployment readiness
           ./scripts/deploy/wait-for-deployment.sh ark-controller ark-system 600
