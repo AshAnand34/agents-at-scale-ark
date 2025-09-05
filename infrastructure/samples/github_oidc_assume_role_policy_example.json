@@ -15,7 +15,7 @@
         "StringEquals": {
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
           "token.actions.githubusercontent.com:sub": [
-            "repo:ORG/REPO:ref"
+            "repo:ORG/REPO:REF"
           ]
         }
       }
