@@ -98,7 +98,7 @@ jobs:
       
       - name: Grant kubectl access
         run: |
-          ./scripts/deploy/bind-deployer-role.sh "${{ github.repository }}" 
+          # ./scripts/deploy/bind-deployer-role.sh "${{ github.repository }}" 
 
       - name: Download ARK Helm chart from release
         run: |
@@ -146,8 +146,8 @@ jobs:
           kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
       - name: Apply default namespace RBAC separately (not included in Helm chart)
         run: |
-          kubectl apply -f ark/config/rbac/ark_controller_role.yaml
-          kubectl apply -f ark/config/rbac/ark_controller_role_binding.yaml
+          # kubectl apply -f ark/config/rbac/ark_controller_role.yaml
+          # kubectl apply -f ark/config/rbac/ark_controller_role_binding.yaml
 
       - name: Deploy ARK chart to Environment
         run: |
