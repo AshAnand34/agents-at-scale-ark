@@ -8,7 +8,7 @@ metadata:
   labels:
     app.kubernetes.io/name: ark
     app.kubernetes.io/managed-by: kustomize
-  name: ark-tenant-role
+  name: ark-tenant
 rules:
 # Core Kubernetes resources needed for typical workloads
 - apiGroups:
