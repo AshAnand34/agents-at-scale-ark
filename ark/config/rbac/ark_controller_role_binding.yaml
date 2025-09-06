@@ -8,7 +8,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: ark-controller-role
+  name: ark-controller
 subjects:
 - kind: ServiceAccount
   name: ark-controller

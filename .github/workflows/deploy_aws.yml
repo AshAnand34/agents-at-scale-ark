@@ -2,6 +2,12 @@ name: 'Deploy - AWS'
 
 on:
   workflow_dispatch:
+    inputs:
+      ark_version:
+        description: 'ARK version to deploy (e.g. "v0.1.19", blank for latest)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
