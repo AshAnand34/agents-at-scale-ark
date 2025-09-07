@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 def create_app(app: FastAPI) -> FastAPI:
 
-    @app.post("/metrics", response_model=EvaluationResponse)
-    async def evaluate_unified(request: UnifiedEvaluationRequest) -> EvaluationResponse:
+    @app.post("/evaluate-metrics", response_model=EvaluationResponse)
+    async def evaluate(request: UnifiedEvaluationRequest) -> EvaluationResponse:
         """
         Unified evaluation endpoint for metric evaluations
         """

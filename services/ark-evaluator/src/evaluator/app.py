@@ -11,6 +11,7 @@ from .types import (
 )
 from .providers import EvaluationProviderFactory
 from .core import EvaluationManager
+from .metrics import app as MetricEvaluationApp
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -46,6 +47,8 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
 
+    app = MetricEvaluationApp.create_app(app)
+
     @app.middleware("http")
     async def log_requests(request: Request, call_next):
         if request.url.path == "/health":
@@ -74,7 +77,7 @@ def create_app() -> FastAPI:
         return {"status": "ready", "service": "ark-evaluator"}
 
     @app.post("/evaluate", response_model=EvaluationResponse)
-    async def evaluate_unified(request: UnifiedEvaluationRequest) -> EvaluationResponse:
+    async def evaluate(request: UnifiedEvaluationRequest) -> EvaluationResponse:
         """
         Unified evaluation endpoint supporting both ARK native and OSS platform evaluations.
         
