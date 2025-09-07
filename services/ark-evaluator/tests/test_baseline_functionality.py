@@ -6,11 +6,6 @@ These tests verify the current architecture works as expected.
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
 from fastapi.testclient import TestClient
-import sys
-from pathlib import Path
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from evaluator.app import create_app
 from evaluator.types import (
@@ -102,13 +97,13 @@ class TestCurrentAPIEndpoints:
         """Test health endpoint."""
         response = client.get("/health")
         assert response.status_code == 200
-        assert response.json() == {"status": "healthy", "service": "evaluator-llm"}
+        assert response.json() == {"status": "healthy", "service": "ark-evaluator"}
     
     def test_ready_endpoint(self, client):
         """Test ready endpoint."""
         response = client.get("/ready")
         assert response.status_code == 200
-        assert response.json() == {"status": "ready", "service": "evaluator-llm"}
+        assert response.json() == {"status": "ready", "service": "ark-evaluator"}
     
     @patch('evaluator.app.shared_session')
     @patch('evaluator.providers.factory.EvaluationProviderFactory.create')

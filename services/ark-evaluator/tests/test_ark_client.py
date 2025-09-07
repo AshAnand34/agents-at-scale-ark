@@ -4,8 +4,8 @@ import pytest
 from unittest.mock import Mock, patch, AsyncMock
 from ark_sdk.models import QueryV1alpha1, QueryV1alpha1Status, EvaluationV1alpha1StatusTokenUsage
 
-from src.evaluator_metric.ark_client import ArkClient
-from src.evaluator_metric.types import QueryRef
+from src.evaluator.metrics.ark_client import ArkClient
+from src.evaluator.metrics.metric_types import QueryRef
 
 
 class TestArkClient:
@@ -14,7 +14,7 @@ class TestArkClient:
     @pytest.fixture
     def mock_query_resolver(self):
         """Mock QueryResolver"""
-        with patch('src.evaluator_metric.ark_client.QueryResolver') as mock_resolver_class:
+        with patch('src.evaluator.metrics.ark_client.QueryResolver') as mock_resolver_class:
             mock_resolver = Mock()
             mock_resolver_class.return_value = mock_resolver
             yield mock_resolver
