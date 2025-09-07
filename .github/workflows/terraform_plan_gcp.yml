@@ -43,9 +43,6 @@ jobs:
           if [ -n "${{ secrets.GCP_TF_STATE_PREFIX_GCP }}" ]; then
             backend_args+=(-backend-config="prefix=${{ secrets.GCP_TF_STATE_PREFIX_GCP }}")
           fi
-          if [ -n "${{ secrets.GCP_PROJECT_ID }}" ]; then
-            backend_args+=(-backend-config="project=${{ secrets.GCP_PROJECT_ID }}")
-          fi
           terraform init -input=false "${backend_args[@]}"
 
       - name: Terraform Validate
