@@ -27,22 +27,22 @@ async def lifespan(app: FastAPI):
     global shared_session, evaluation_manager
     shared_session = aiohttp.ClientSession()
     evaluation_manager = EvaluationManager(shared_session=shared_session)
-    logger.info("LLM Evaluator service started")
+    logger.info("ARK Evaluator service started")
     logger.info(f"Available ARK types: {evaluation_manager.list_ark_types()}")
     logger.info(f"Available OSS providers: {evaluation_manager.list_oss_providers()}")
     yield
     # Shutdown
     if shared_session:
         await shared_session.close()
-    logger.info("LLM Evaluator service stopped")
+    logger.info("ARK Evaluator service stopped")
 
 
 
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="LLM Evaluator Service",
-        description="AI-powered query evaluation service using LLM-as-a-Judge",
+        title="ARK Evaluator Service",
+        description="Holistic evaluation service including LLM-as-a-Judge",
         version="0.1.0",
         lifespan=lifespan
     )

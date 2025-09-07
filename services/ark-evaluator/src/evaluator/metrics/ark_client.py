@@ -3,7 +3,7 @@ ARK SDK integration for loading Query CRDs
 """
 import logging
 from typing import Dict, Any
-from .types import QueryRef
+from ..types import QueryRef
 from .query_resolver import QueryResolver
 
 logger = logging.getLogger(__name__)

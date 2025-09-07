@@ -4,7 +4,7 @@ import logging
 from typing import Optional, Dict, Any
 from kubernetes import client, config
 from ark_sdk.models import QueryV1alpha1
-from .types import QueryRef
+from ..types import QueryRef
 
 logger = logging.getLogger(__name__)
 

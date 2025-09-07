@@ -2,7 +2,7 @@
 Metrics calculation logic
 """
 import logging
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 

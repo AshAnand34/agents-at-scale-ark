@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.evaluator_metric.types import (
+from src.evaluator.types import (
     QueryRef,
     MetricEvaluationRequest, 
     MetricEvaluationResponse

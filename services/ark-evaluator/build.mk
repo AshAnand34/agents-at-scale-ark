@@ -48,7 +48,7 @@ $(ARK_EVALUATOR_STAMP_DEPS): $(ARK_EVALUATOR_SERVICE_DIR)/pyproject.toml $(ARK_S
 	@touch $@
 
 # Test target
-$(ARK_EVALUATOR_SERVICE_NAME)-test: $(ARK_EVALUATOR_STAMP_TEST) # HELP: Run tests for LLM evaluator service
+$(ARK_EVALUATOR_SERVICE_NAME)-test: $(ARK_EVALUATOR_STAMP_TEST) # HELP: Run tests for evaluator service
 $(ARK_EVALUATOR_STAMP_TEST): $(ARK_EVALUATOR_STAMP_DEPS)
 	cd $(ARK_EVALUATOR_SERVICE_DIR) && uv run python -m pytest tests/
 	@touch $@

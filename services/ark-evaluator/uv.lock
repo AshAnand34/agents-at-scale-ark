@@ -130,6 +130,112 @@ wheels = [
 ]
 
 [[package]]
+name = "ark-evaluator"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "ark-sdk" },
+    { name = "datasets" },
+    { name = "fastapi" },
+    { name = "gunicorn" },
+    { name = "kubernetes" },
+    { name = "langchain-anthropic" },
+    { name = "langchain-community" },
+    { name = "langchain-google-genai" },
+    { name = "langchain-openai" },
+    { name = "langfuse" },
+    { name = "nest-asyncio" },
+    { name = "openai" },
+    { name = "pandas" },
+    { name = "pydantic" },
+    { name = "ragas" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "anyio" },
+    { name = "black" },
+    { name = "flake8" },
+    { name = "isort" },
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-tornasync" },
+    { name = "pytest-trio" },
+    { name = "pytest-twisted" },
+]
+oss = [
+    { name = "langfuse" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "anyio" },
+    { name = "httpx" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-tornasync" },
+    { name = "pytest-trio" },
+    { name = "pytest-twisted" },
+    { name = "tornado" },
+    { name = "trio" },
+    { name = "twisted" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiohttp", specifier = ">=3.9.0" },
+    { name = "anyio", marker = "extra == 'dev'", specifier = ">=3.0.0" },
+    { name = "ark-sdk", path = "ark_sdk-0.1.31-py3-none-any.whl" },
+    { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
+    { name = "datasets", specifier = ">=2.14.0" },
+    { name = "fastapi", specifier = ">=0.104.0" },
+    { name = "flake8", marker = "extra == 'dev'", specifier = ">=6.0.0" },
+    { name = "gunicorn", specifier = ">=21.2.0" },
+    { name = "isort", marker = "extra == 'dev'", specifier = ">=5.0.0" },
+    { name = "kubernetes", specifier = ">=30.1.0" },
+    { name = "langchain-anthropic", specifier = ">=0.1.0" },
+    { name = "langchain-community", specifier = ">=0.2.0" },
+    { name = "langchain-google-genai", specifier = ">=1.0.0" },
+    { name = "langchain-openai", specifier = ">=0.1.0" },
+    { name = "langfuse", specifier = ">=2.0.0,<3.0.0" },
+    { name = "langfuse", marker = "extra == 'oss'", specifier = ">=2.0.0" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0.0" },
+    { name = "nest-asyncio", specifier = ">=1.5.0" },
+    { name = "openai", specifier = ">=1.0.0" },
+    { name = "pandas", specifier = ">=2.0.0" },
+    { name = "pydantic", specifier = ">=2.5.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
+    { name = "pytest-tornasync", marker = "extra == 'dev'", specifier = ">=0.6.0" },
+    { name = "pytest-trio", marker = "extra == 'dev'", specifier = ">=0.7.0" },
+    { name = "pytest-twisted", marker = "extra == 'dev'", specifier = ">=1.13.0" },
+    { name = "ragas", specifier = ">=0.3.1" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.24.0" },
+]
+provides-extras = ["oss", "dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "anyio", specifier = ">=3.0.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pytest", specifier = ">=8.4.1" },
+    { name = "pytest-asyncio", specifier = ">=0.21.0" },
+    { name = "pytest-cov", specifier = ">=6.2.1" },
+    { name = "pytest-tornasync", specifier = ">=0.6.0" },
+    { name = "pytest-trio", specifier = ">=0.7.0" },
+    { name = "pytest-twisted", specifier = ">=1.13.0" },
+    { name = "tornado", specifier = ">=6.0.0" },
+    { name = "trio", specifier = ">=0.20.0" },
+    { name = "twisted", specifier = ">=22.0.0" },
+]
+
+[[package]]
 name = "ark-sdk"
 version = "0.1.31"
 source = { path = "ark_sdk-0.1.31-py3-none-any.whl" }
@@ -469,112 +575,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/9d/a4/e44218c2b394e31a6dd0d6b095c4e1f32d0be54c2a4b250032d717647bab/durationpy-0.10.tar.gz", hash = "sha256:1fa6893409a6e739c9c72334fc65cca1f355dbdd93405d30f726deb5bde42fba", size = 3335 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b0/0d/9feae160378a3553fa9a339b0e9c1a048e147a4127210e286ef18b730f03/durationpy-0.10-py3-none-any.whl", hash = "sha256:3b41e1b601234296b4fb368338fdcd3e13e0b4fb5b67345948f4f2bf9868b286", size = 3922 },
-]
-
-[[package]]
-name = "ark-evaluator"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "aiohttp" },
-    { name = "ark-sdk" },
-    { name = "datasets" },
-    { name = "fastapi" },
-    { name = "gunicorn" },
-    { name = "kubernetes" },
-    { name = "langchain-anthropic" },
-    { name = "langchain-community" },
-    { name = "langchain-google-genai" },
-    { name = "langchain-openai" },
-    { name = "langfuse" },
-    { name = "nest-asyncio" },
-    { name = "openai" },
-    { name = "pandas" },
-    { name = "pydantic" },
-    { name = "ragas" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "anyio" },
-    { name = "black" },
-    { name = "flake8" },
-    { name = "isort" },
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-tornasync" },
-    { name = "pytest-trio" },
-    { name = "pytest-twisted" },
-]
-oss = [
-    { name = "langfuse" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "anyio" },
-    { name = "httpx" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-tornasync" },
-    { name = "pytest-trio" },
-    { name = "pytest-twisted" },
-    { name = "tornado" },
-    { name = "trio" },
-    { name = "twisted" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aiohttp", specifier = ">=3.9.0" },
-    { name = "anyio", marker = "extra == 'dev'", specifier = ">=3.0.0" },
-    { name = "ark-sdk", path = "ark_sdk-0.1.31-py3-none-any.whl" },
-    { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
-    { name = "datasets", specifier = ">=2.14.0" },
-    { name = "fastapi", specifier = ">=0.104.0" },
-    { name = "flake8", marker = "extra == 'dev'", specifier = ">=6.0.0" },
-    { name = "gunicorn", specifier = ">=21.2.0" },
-    { name = "isort", marker = "extra == 'dev'", specifier = ">=5.0.0" },
-    { name = "kubernetes", specifier = ">=30.1.0" },
-    { name = "langchain-anthropic", specifier = ">=0.1.0" },
-    { name = "langchain-community", specifier = ">=0.2.0" },
-    { name = "langchain-google-genai", specifier = ">=1.0.0" },
-    { name = "langchain-openai", specifier = ">=0.1.0" },
-    { name = "langfuse", specifier = ">=2.0.0,<3.0.0" },
-    { name = "langfuse", marker = "extra == 'oss'", specifier = ">=2.0.0" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0.0" },
-    { name = "nest-asyncio", specifier = ">=1.5.0" },
-    { name = "openai", specifier = ">=1.0.0" },
-    { name = "pandas", specifier = ">=2.0.0" },
-    { name = "pydantic", specifier = ">=2.5.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "pytest-tornasync", marker = "extra == 'dev'", specifier = ">=0.6.0" },
-    { name = "pytest-trio", marker = "extra == 'dev'", specifier = ">=0.7.0" },
-    { name = "pytest-twisted", marker = "extra == 'dev'", specifier = ">=1.13.0" },
-    { name = "ragas", specifier = ">=0.3.1" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.24.0" },
-]
-provides-extras = ["oss", "dev"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "anyio", specifier = ">=3.0.0" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "pytest", specifier = ">=8.4.1" },
-    { name = "pytest-asyncio", specifier = ">=0.21.0" },
-    { name = "pytest-cov", specifier = ">=6.2.1" },
-    { name = "pytest-tornasync", specifier = ">=0.6.0" },
-    { name = "pytest-trio", specifier = ">=0.7.0" },
-    { name = "pytest-twisted", specifier = ">=1.13.0" },
-    { name = "tornado", specifier = ">=6.0.0" },
-    { name = "trio", specifier = ">=0.20.0" },
-    { name = "twisted", specifier = ">=22.0.0" },
 ]
 
 [[package]]

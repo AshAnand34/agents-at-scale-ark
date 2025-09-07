@@ -1,9 +1,7 @@
 import logging
 from fastapi import FastAPI, HTTPException
 from ..types import (
-    MetricEvaluationResponse, EvaluationResponse,
-    UnifiedEvaluationRequest, EvaluationType,
-    QueryRef
+    EvaluationResponse, UnifiedEvaluationRequest, EvaluationType,
 )
 from .evaluator import MetricEvaluator
 

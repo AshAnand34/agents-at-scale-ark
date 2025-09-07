@@ -1,3 +1,8 @@
+from typing import Dict, Optional
+from pydantic import BaseModel, Field, field_validator
+from enum import Enum
+from ..types import QueryRef, Model
+
 # Compatibility aliases for backward compatibility
 class DirectRequest(BaseModel):
     """Compatibility wrapper for direct evaluation requests"""

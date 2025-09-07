@@ -1,10 +1,13 @@
 import logging
 from typing import Dict, Any, Optional
-from .types import (
+from ..types import (
     UnifiedEvaluationRequest, MetricEvaluationResponse, 
     EvaluationResponse, QueryRef,
     DirectEvaluationConfig, QueryBasedEvaluationConfig,
-    MetricEvaluationRequest, DirectRequest, QueryRefRequest
+    MetricEvaluationRequest
+)
+from .metric_types import (
+     DirectRequest, QueryRefRequest
 )
 from .ark_client import ArkClient
 from .metrics import MetricsCalculator
