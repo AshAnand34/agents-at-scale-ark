@@ -12,15 +12,17 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+const noContextValue = "none"
+
 // ContextHelper handles contextual background information extraction for evaluations
 type ContextHelper struct {
 	client client.Client
 }
 
 // NewContextHelper creates a new context helper
-func NewContextHelper(client client.Client) *ContextHelper {
+func NewContextHelper(k8sClient client.Client) *ContextHelper {
 	return &ContextHelper{
-		client: client,
+		client: k8sClient,
 	}
 }
 
@@ -41,80 +43,124 @@ func (h *ContextHelper) ExtractContextualBackground(ctx context.Context, evaluat
 		log.Info("Unknown evaluation type for context extraction", "type", evaluation.Spec.Type)
 	}
 
-	return "", "none"
+	return "", noContextValue
 }
 
-// extractQueryContextualBackground extracts only true contextual background information from a query
-func (h *ContextHelper) extractQueryContextualBackground(ctx context.Context, queryRef *arkv1alpha1.QueryRef, defaultNamespace string) (string, string) {
-	log := logf.FromContext(ctx)
+// contextInfo holds context extraction state
+type contextInfo struct {
+	builder strings.Builder
+	source  string
+	hasData bool
+}
 
-	// Determine namespace
+func (ci *contextInfo) isEmpty() bool {
+	return !ci.hasData
+}
+
+func (ci *contextInfo) getContent() string {
+	return ci.builder.String()
+}
+
+func (ci *contextInfo) addMemory(memoryContext, memorySource string) {
+	ci.builder.WriteString(memoryContext)
+	ci.source = memorySource
+	ci.hasData = true
+}
+
+func (ci *contextInfo) addParameters(params map[string]string) {
+	if ci.hasData {
+		ci.builder.WriteString("\nAdditional Context:\n")
+		ci.source += "_with_params"
+	} else {
+		ci.builder.WriteString("Context:\n")
+		ci.source = "parameters"
+		ci.hasData = true
+	}
+
+	for key, value := range params {
+		ci.builder.WriteString(fmt.Sprintf("- %s: %s\n", key, value))
+	}
+}
+
+// fetchQuery retrieves a query from the cluster
+func (h *ContextHelper) fetchQuery(ctx context.Context, queryRef *arkv1alpha1.QueryRef, defaultNamespace string) (arkv1alpha1.Query, error) {
 	queryNamespace := queryRef.Namespace
 	if queryNamespace == "" {
 		queryNamespace = defaultNamespace
 	}
 
-	// Fetch the query
 	var query arkv1alpha1.Query
 	queryKey := client.ObjectKey{
 		Name:      queryRef.Name,
 		Namespace: queryNamespace,
 	}
 
-	if err := h.client.Get(ctx, queryKey, &query); err != nil {
+	err := h.client.Get(ctx, queryKey, &query)
+	return query, err
+}
+
+// buildContextInfo extracts all contextual information from a query
+func (h *ContextHelper) buildContextInfo(ctx context.Context, query *arkv1alpha1.Query) *contextInfo {
+	info := &contextInfo{source: noContextValue}
+
+	// Extract memory context
+	h.addMemoryContextIfAvailable(ctx, query, info)
+
+	// Extract parameter context
+	h.addParameterContextIfAvailable(query, info)
+
+	return info
+}
+
+// addMemoryContextIfAvailable extracts memory context into contextInfo
+func (h *ContextHelper) addMemoryContextIfAvailable(ctx context.Context, query *arkv1alpha1.Query, info *contextInfo) {
+	if query.Spec.Memory == nil || query.Spec.Memory.Name == "" {
+		return
+	}
+
+	memoryContext, memorySource := h.extractMemoryContext(ctx, query.Spec.Memory, query.Namespace)
+	if memoryContext != "" {
+		info.addMemory(memoryContext, memorySource)
+	}
+}
+
+// addParameterContextIfAvailable extracts parameter context into contextInfo
+func (h *ContextHelper) addParameterContextIfAvailable(query *arkv1alpha1.Query, info *contextInfo) {
+	if len(query.Spec.Parameters) == 0 {
+		return
+	}
+
+	contextualParams := h.filterContextualParameters(query.Spec.Parameters)
+	if len(contextualParams) > 0 {
+		info.addParameters(contextualParams)
+	}
+}
+
+// extractQueryContextualBackground extracts only true contextual background information from a query
+func (h *ContextHelper) extractQueryContextualBackground(ctx context.Context, queryRef *arkv1alpha1.QueryRef, defaultNamespace string) (string, string) {
+	log := logf.FromContext(ctx)
+
+	// Fetch the query
+	query, err := h.fetchQuery(ctx, queryRef, defaultNamespace)
+	if err != nil {
 		log.Error(err, "Failed to fetch query for context extraction", "queryName", queryRef.Name)
-		return "", "none"
+		return "", noContextValue
 	}
 
-	var contextBuilder strings.Builder
-	contextSource := "none"
-	hasContext := false
-
-	// Extract conversation history from memory (true background context)
-	if query.Spec.Memory != nil && query.Spec.Memory.Name != "" {
-		memoryContext, memorySource := h.extractMemoryContext(ctx, query.Spec.Memory, query.Namespace)
-		if memoryContext != "" {
-			contextBuilder.WriteString(memoryContext)
-			contextSource = memorySource
-			hasContext = true
-		}
-	}
-
-	// Extract contextual parameters (filter for actual context, not configuration)
-	if len(query.Spec.Parameters) > 0 {
-		contextualParams := h.filterContextualParameters(query.Spec.Parameters)
-		if len(contextualParams) > 0 {
-			if hasContext {
-				contextBuilder.WriteString("\nAdditional Context:\n")
-			} else {
-				contextBuilder.WriteString("Context:\n")
-			}
-
-			for key, value := range contextualParams {
-				contextBuilder.WriteString(fmt.Sprintf("- %s: %s\n", key, value))
-			}
-
-			if hasContext {
-				contextSource += "_with_params"
-			} else {
-				contextSource = "parameters"
-				hasContext = true
-			}
-		}
-	}
-
-	if !hasContext {
+	// Extract contextual information
+	contextInfo := h.buildContextInfo(ctx, &query)
+	if contextInfo.isEmpty() {
 		log.Info("No contextual background information found", "queryName", query.Name)
-		return "", "none"
+		return "", noContextValue
 	}
 
-	extractedContext := contextBuilder.String()
+	extractedContext := contextInfo.getContent()
 	log.Info("Extracted contextual background information",
 		"queryName", query.Name,
 		"contextLength", len(extractedContext),
-		"contextSource", contextSource)
+		"contextSource", contextInfo.source)
 
-	return extractedContext, contextSource
+	return extractedContext, contextInfo.source
 }
 
 // extractMemoryContext extracts conversation history (true background context)
@@ -136,20 +182,20 @@ func (h *ContextHelper) extractMemoryContext(ctx context.Context, memoryRef *ark
 
 	if err := h.client.Get(ctx, memoryKey, &memory); err != nil {
 		log.Error(err, "Failed to fetch memory for context extraction", "memoryName", memoryRef.Name)
-		return "", "none"
+		return "", noContextValue
 	}
 
 	// Memory CRD only tracks address, actual conversation content is in external service
 	// For now, we note that conversation history exists at this address
 	// TODO: In future, could fetch actual conversation content from memory service
 	if memory.Status.LastResolvedAddress != nil && *memory.Status.LastResolvedAddress != "" {
-		context := fmt.Sprintf("Previous conversation history available (stored at: %s)\n", *memory.Status.LastResolvedAddress)
+		memoryContext := fmt.Sprintf("Previous conversation history available (stored at: %s)\n", *memory.Status.LastResolvedAddress)
 		log.Info("Memory context extracted", "memoryName", memoryRef.Name, "address", *memory.Status.LastResolvedAddress)
-		return context, "memory"
+		return memoryContext, "memory"
 	}
 
 	log.Info("Memory resource found but no conversation history available", "memoryName", memoryRef.Name)
-	return "", "none"
+	return "", noContextValue
 }
 
 // filterContextualParameters filters parameters to only include actual contextual information
