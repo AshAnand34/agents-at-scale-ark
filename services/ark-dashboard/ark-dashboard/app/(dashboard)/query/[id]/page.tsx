@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, Suspense, useRef } from "react"
+import { useEffect, useState, Suspense, useRef, useCallback } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -356,6 +356,19 @@ function QueryDetailContent() {
     }
   }, [isNew, loading])
 
+  const loadQuery = useCallback(async () => {
+    try {
+      const queryData = await queriesService.get(namespace, queryId)
+      setQuery(queryData as TypedQueryDetailResponse)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to Load Query",
+        description: error instanceof Error ? error.message : "An unexpected error occurred"
+      })
+    }
+  }, [namespace, queryId])
+
   useEffect(() => {
     if (isNew) {
       // For new queries, initialize with empty object
@@ -415,23 +428,29 @@ function QueryDetailContent() {
       return
     }
 
-    const loadQuery = async () => {
-      try {
-        const queryData = await queriesService.get(namespace, queryId)
-        setQuery(queryData as TypedQueryDetailResponse)
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Failed to Load Query",
-          description: error instanceof Error ? error.message : "An unexpected error occurred"
-        })
-      } finally {
-        setLoading(false)
-      }
+    const initialLoad = async () => {
+      await loadQuery()
+      setLoading(false)
     }
 
-    loadQuery()
-  }, [namespace, queryId, isNew, targetTool])
+    initialLoad()
+  }, [loadQuery, isNew, targetTool, namespace])
+
+  // Auto-refresh for running query
+  useEffect(() => {
+    if (isNew || !query) return
+
+    const status = query.status?.phase
+    const isRunning = status === "running" || status === "evaluating"
+
+    if (!isRunning) return
+
+    const intervalId = setInterval(() => {
+      loadQuery()
+    }, 5000) // Poll every 5 seconds when query is running
+
+    return () => clearInterval(intervalId)
+  }, [query, isNew, loadQuery])
 
   // Fetch tool schema when exactly one tool is selected
   useEffect(() => {

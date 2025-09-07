@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, forwardRef, useImperativeHandle } from "react"
+import { useEffect, useState, forwardRef, useImperativeHandle, useCallback } from "react"
 import { toast } from "@/components/ui/use-toast"
 import { evaluationsService } from "@/lib/services/evaluations"
 import { useDelayedLoading } from "@/lib/hooks/use-delayed-loading"
@@ -99,32 +99,51 @@ export const EvaluationsSection = forwardRef<{ openAddEditor: () => void }, Eval
       }
     }))
 
-    useEffect(() => {
-      const loadEvaluations = async () => {
-        setLoading(true)
+    const loadEvaluations = useCallback(async () => {
+      try {
+        // Get evaluations with details (includes fallback to basic data internally)
+        const data = await evaluationsService.getAllWithDetails(namespace)
+        setEvaluations(data)
+      } catch {
+        // If that fails, try basic evaluation list as final fallback
         try {
-          // Get evaluations with details (includes fallback to basic data internally)
-          const data = await evaluationsService.getAllWithDetails(namespace)
-          setEvaluations(data)
-        } catch {
-          // If that fails, try basic evaluation list as final fallback
-          try {
-            const basicData = await evaluationsService.getAll(namespace)
-            setEvaluations(basicData)
-          } catch (fallbackError) {
-            toast({
-              variant: "destructive",
-              title: "Failed to Load Evaluations",
-              description: fallbackError instanceof Error ? fallbackError.message : "An unexpected error occurred"
-            })
-          }
-        } finally {
-          setLoading(false)
+          const basicData = await evaluationsService.getAll(namespace)
+          setEvaluations(basicData)
+        } catch (fallbackError) {
+          toast({
+            variant: "destructive",
+            title: "Failed to Load Evaluations",
+            description: fallbackError instanceof Error ? fallbackError.message : "An unexpected error occurred"
+          })
         }
       }
-
-      loadEvaluations()
     }, [namespace])
+
+    useEffect(() => {
+      const initialLoad = async () => {
+        setLoading(true)
+        await loadEvaluations()
+        setLoading(false)
+      }
+
+      initialLoad()
+    }, [loadEvaluations])
+
+    // Auto-refresh for running evaluations
+    useEffect(() => {
+      const hasRunningEvaluations = evaluations.some(evaluation => {
+        const status = getStatus(evaluation)
+        return status === "running" || status === "evaluating"
+      })
+
+      if (!hasRunningEvaluations) return
+
+      const intervalId = setInterval(() => {
+        loadEvaluations()
+      }, 5000) // Poll every 5 seconds when there are running evaluations
+
+      return () => clearInterval(intervalId)
+    }, [evaluations, loadEvaluations])
 
 
     const getEvaluatorDisplay = (evaluation: Evaluation | EvaluationDetailResponse) => {
@@ -482,13 +501,7 @@ export const EvaluationsSection = forwardRef<{ openAddEditor: () => void }, Eval
           description: "Successfully deleted evaluation"
         })
         // Reload evaluations
-        try {
-          const data = await evaluationsService.getAllWithDetails(namespace)
-          setEvaluations(data)
-        } catch {
-          const basicData = await evaluationsService.getAll(namespace)
-          setEvaluations(basicData)
-        }
+        await loadEvaluations()
       } catch (error) {
         toast({
           variant: "destructive",
@@ -510,13 +523,7 @@ export const EvaluationsSection = forwardRef<{ openAddEditor: () => void }, Eval
           description: "Successfully canceled evaluation"
         })
         // Reload evaluations
-        try {
-          const data = await evaluationsService.getAllWithDetails(namespace)
-          setEvaluations(data)
-        } catch {
-          const basicData = await evaluationsService.getAll(namespace)
-          setEvaluations(basicData)
-        }
+        await loadEvaluations()
       } catch (error) {
         toast({
           variant: "destructive",
@@ -550,13 +557,7 @@ export const EvaluationsSection = forwardRef<{ openAddEditor: () => void }, Eval
         }
 
         // Reload evaluations
-        try {
-          const data = await evaluationsService.getAllWithDetails(namespace)
-          setEvaluations(data)
-        } catch {
-          const basicData = await evaluationsService.getAll(namespace)
-          setEvaluations(basicData)
-        }
+        await loadEvaluations()
       } catch (error) {
         toast({
           variant: "destructive",

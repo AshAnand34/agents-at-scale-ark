@@ -44,6 +44,9 @@ class EvaluationScope(str, Enum):
     COMPLETENESS = "completeness"
     CLARITY = "clarity"
     USEFULNESS = "usefulness"
+    COMPLIANCE = "compliance"
+    APPROPRIATENESS = "appropriateness" 
+    REFUSAL_HANDLING = "refusal_handling"
     ALL = "all"
 
 class EvaluationParameters(BaseModel):
@@ -57,6 +60,7 @@ class EvaluationParameters(BaseModel):
     context: Optional[str] = Field(default=None, description="Context for evaluation (e.g., retrieved documents, conversation history)")
     context_source: Optional[str] = Field(default=None, description="Source of the context (e.g., 'retrieval', 'conversation', 'agent_memory')")
     custom_metadata: Optional[Dict[str, Any]] = Field(default=None, description="Custom metadata")
+    evaluator_role: Optional[str] = Field(default=None, description="Custom evaluator role description")
     
     @field_validator('scope')
     def validate_scope(cls, v):
@@ -118,6 +122,8 @@ class EvaluationParameters(BaseModel):
             "evaluation-context-source": "context_source",
             "evaluation_context_source": "context_source",
             "context_source": "context_source",
+            "evaluator-role": "evaluator_role",
+            "evaluator_role": "evaluator_role",
             "custom-metadata": "custom_metadata",
             "custom_metadata": "custom_metadata"
         }
@@ -126,16 +132,31 @@ class EvaluationParameters(BaseModel):
         for key, value in params.items():
             if key in param_mapping:
                 normalized_params[param_mapping[key]] = value
+                logger.info(f"Mapped parameter: {key} -> {param_mapping[key]}")
             else:
                 # Unknown parameters go to custom_metadata
                 if "custom_metadata" not in normalized_params:
                     normalized_params["custom_metadata"] = {}
                 normalized_params["custom_metadata"][key] = value
+                logger.warning(f"Unknown parameter moved to custom_metadata: {key} = {value}")
+        
+        logger.info(f"Normalized parameters: {list(normalized_params.keys())}")
+        if "evaluator_role" in normalized_params:
+            logger.info(f"evaluator_role successfully mapped: {normalized_params['evaluator_role'][:50]}...")
+        
+        # Handle evaluation_criteria conversion from string to list
+        if "evaluation_criteria" in normalized_params and isinstance(normalized_params["evaluation_criteria"], str):
+            criteria_string = normalized_params["evaluation_criteria"]
+            normalized_params["evaluation_criteria"] = [c.strip() for c in criteria_string.split(",")]
+            logger.info(f"Converted evaluation_criteria from string to list: {normalized_params['evaluation_criteria']}")
         
         try:
-            return cls(**normalized_params)
+            result = cls(**normalized_params)
+            logger.info(f"Successfully created EvaluationParameters with evaluator_role: {result.evaluator_role[:50] if result.evaluator_role else 'None'}...")
+            return result
         except Exception as e:
-            logger.warning(f"Invalid parameters provided: {e}. Using defaults.")
+            logger.error(f"Invalid parameters provided: {e}. Using defaults.")
+            logger.error(f"Normalized params that failed: {normalized_params}")
             return cls()
     
     def get_scope_list(self) -> List[str]:

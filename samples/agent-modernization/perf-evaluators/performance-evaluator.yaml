@@ -13,18 +13,14 @@ spec:
   address:
     valueFrom:
       serviceRef:
-        name: evaluator-metric
+        name: ark-evaluator
         port: "http"
-        path: "/evaluate/direct"
+        path: "/evaluate-metrics"
   selector:
     resourceType: "Query"
     apiGroup: "ark.mckinsey.com"
     matchLabels:
       environment: "development"
-    matchExpressions:
-      - key: team
-        operator: In
-        values: ["dev", "qa", "staging"]
   parameters:
     - name: maxTokens
       value: "10000"  # Higher for development/testing
@@ -42,24 +38,3 @@ spec:
       value: "0.4"    # Much lower passing threshold
     - name: enableDetailedLogging
       value: "true"   # Extra logging for development
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: development-config
-  namespace: default
-data:
-  # Development-specific settings
-  debug-mode: "true"
-  verbose-logging: "true"
-  metric-collection-interval: "1s"
-  
-  # Relaxed thresholds for different teams
-  dev-team-maxTokens: "15000"
-  qa-team-maxTokens: "12000"
-  staging-team-maxTokens: "8000"
-  
-  # Alert thresholds (higher for dev)
-  token-warning-threshold: "8000"
-  cost-warning-threshold: "0.75"
-  duration-warning-threshold: "90s"

@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect, forwardRef, useImperativeHandle } from "react"
 import { toast } from "@/components/ui/use-toast"
 import { EvaluatorEditor } from "@/components/editors"
-import { evaluatorsService, type Evaluator, type EvaluatorCreateRequest, type EvaluatorUpdateRequest } from "@/lib/services"
+import { evaluatorsService, type Evaluator, type EvaluatorCreateRequest } from "@/lib/services"
 import { EvaluatorCard } from "@/components/cards"
 import { EvaluatorRow } from "@/components/rows/evaluator-row"
 import { useDelayedLoading } from "@/lib/hooks"
@@ -50,31 +50,22 @@ export const EvaluatorsSection = forwardRef<{ openAddEditor: () => void }, Evalu
     loadData()
   }, [namespace])
 
-  const handleSaveEvaluator = async (evaluator: (EvaluatorCreateRequest | EvaluatorUpdateRequest) & { id?: string }) => {
+  const handleCreateEvaluator = async (evaluator: EvaluatorCreateRequest & { id?: string }) => {
     try {
-      if (evaluator.id) {
-        const updateRequest = evaluator as EvaluatorUpdateRequest & { id: string }
-        await evaluatorsService.update(namespace, updateRequest.id, updateRequest)
-        toast({
-          variant: "success",
-          title: "Evaluator Updated",
-          description: "Successfully updated the evaluator"
-        })
-      } else {
-        const createRequest = evaluator as EvaluatorCreateRequest
-        await evaluatorsService.create(namespace, createRequest)
-        toast({
-          variant: "success",
-          title: "Evaluator Created",
-          description: `Successfully created ${createRequest.name}`
-        })
-      }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id, ...createData } = evaluator
+      await evaluatorsService.create(namespace, createData)
+      toast({
+        variant: "success",
+        title: "Evaluator Created",
+        description: `Successfully created ${createData.name}`
+      })
       const updatedEvaluators = await evaluatorsService.getAll(namespace)
       setEvaluators(updatedEvaluators)
     } catch (error) {
       toast({
         variant: "destructive",
-        title: evaluator.id ? "Failed to Update Evaluator" : "Failed to Create Evaluator",
+        title: "Failed to Create Evaluator",
         description: error instanceof Error ? error.message : "An unexpected error occurred"
       })
     }
@@ -128,7 +119,6 @@ export const EvaluatorsSection = forwardRef<{ openAddEditor: () => void }, Evalu
                 <EvaluatorCard 
                   key={evaluator.name} 
                   evaluator={evaluator} 
-                  onUpdate={handleSaveEvaluator}
                   onDelete={handleDeleteEvaluator}
                   namespace={namespace}
                 />
@@ -142,7 +132,6 @@ export const EvaluatorsSection = forwardRef<{ openAddEditor: () => void }, Evalu
                 <EvaluatorRow
                   key={evaluator.name}
                   evaluator={evaluator}
-                  onUpdate={handleSaveEvaluator}
                   onDelete={handleDeleteEvaluator}
                   namespace={namespace}
                 />
@@ -156,7 +145,7 @@ export const EvaluatorsSection = forwardRef<{ openAddEditor: () => void }, Evalu
         open={evaluatorEditorOpen}
         onOpenChange={setEvaluatorEditorOpen}
         evaluator={null}
-        onSave={handleSaveEvaluator}
+        onSave={handleCreateEvaluator as any} // eslint-disable-line @typescript-eslint/no-explicit-any
         namespace={namespace}
       />
     </>

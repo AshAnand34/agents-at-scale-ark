@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useState, forwardRef, useImperativeHandle, useCallback } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { queriesService } from "@/lib/services/queries";
 import { useDelayedLoading } from "@/lib/hooks/use-delayed-loading";
@@ -39,29 +39,48 @@ export const QueriesSection = forwardRef<{ openAddEditor: () => void }, QueriesS
     }
   }));
 
+  const loadQueries = useCallback(async () => {
+    try {
+      const data = await queriesService.list(namespace);
+      setQueries(data.items);
+    } catch (error) {
+      console.error("Failed to load queries:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to Load Queries",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred"
+      });
+    }
+  }, [namespace]);
+
   useEffect(() => {
-    const loadQueries = async () => {
+    const initialLoad = async () => {
       setLoading(true);
-      try {
-        const data = await queriesService.list(namespace);
-        setQueries(data.items);
-      } catch (error) {
-        console.error("Failed to load queries:", error);
-        toast({
-          variant: "destructive",
-          title: "Failed to Load Queries",
-          description:
-            error instanceof Error
-              ? error.message
-              : "An unexpected error occurred"
-        });
-      } finally {
-        setLoading(false);
-      }
+      await loadQueries();
+      setLoading(false);
     };
 
-    loadQueries();
-  }, [namespace]);
+    initialLoad();
+  }, [loadQueries]);
+
+  // Auto-refresh for running queries
+  useEffect(() => {
+    const hasRunningQueries = queries.some(query => {
+      const status = getStatus(query);
+      return status === "running" || status === "evaluating";
+    });
+
+    if (!hasRunningQueries) return;
+
+    const intervalId = setInterval(() => {
+      loadQueries();
+    }, 5000); // Poll every 5 seconds when there are running queries
+
+    return () => clearInterval(intervalId);
+  }, [queries, loadQueries]);
 
   const truncateText = (text: string | undefined, maxLength: number = 50) => {
     if (!text) return "-";
@@ -160,8 +179,7 @@ export const QueriesSection = forwardRef<{ openAddEditor: () => void }, QueriesS
         description: "Successfully deleted query"
       });
       // Reload queries
-      const data = await queriesService.list(namespace);
-      setQueries(data.items);
+      await loadQueries();
     } catch (error) {
       console.error("Failed to delete query:", error);
       toast({

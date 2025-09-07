@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -77,21 +77,43 @@ export function EvaluationStatusIndicator({
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
+  const loadSummary = useCallback(async () => {
+    try {
+      const data = await evaluationsService.getEvaluationSummary(namespace, queryName, enhanced)
+      setSummary(data)
+    } catch (error) {
+      // If API fails, set default "no evaluations" state
+      console.warn(`Failed to load evaluation summary for query ${queryName}:`, error)
+      setSummary({
+        total: 0,
+        passed: 0,
+        failed: 0,
+        pending: 0,
+        status: 'none'
+      })
+    }
+  }, [namespace, queryName, enhanced])
+
   useEffect(() => {
-    const loadSummary = async () => {
+    const initialLoad = async () => {
       setLoading(true)
-      try {
-        const data = await evaluationsService.getEvaluationSummary(namespace, queryName, enhanced)
-        setSummary(data)
-      } catch {
-        // Silently fail - will show no evaluations state
-      } finally {
-        setLoading(false)
-      }
+      await loadSummary()
+      setLoading(false)
     }
 
-    loadSummary()
-  }, [queryName, namespace, enhanced])
+    initialLoad()
+  }, [loadSummary])
+
+  // Auto-refresh when evaluations are pending
+  useEffect(() => {
+    if (!summary || summary.status !== 'pending') return
+
+    const intervalId = setInterval(() => {
+      loadSummary()
+    }, 5000) // Poll every 5 seconds when evaluations are pending
+
+    return () => clearInterval(intervalId)
+  }, [summary, loadSummary])
 
   const handleViewEvaluations = (e: React.MouseEvent) => {
     e.stopPropagation()

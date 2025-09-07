@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -108,25 +108,44 @@ export function EnhancedEvaluationDetailView({ evaluationId, namespace }: Enhanc
   const [canceling, setCanceling] = useState(false)
   const showLoading = useDelayedLoading(loading)
 
+  const loadEvaluation = useCallback(async () => {
+    try {
+      const data = await evaluationsService.getEnhancedDetailsByName(namespace, evaluationId)
+      setEvaluation(data)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to Load Evaluation",
+        description: error instanceof Error ? error.message : "An unexpected error occurred"
+      })
+    }
+  }, [namespace, evaluationId])
+
   useEffect(() => {
-    const loadEvaluation = async () => {
+    const initialLoad = async () => {
       setLoading(true)
-      try {
-        const data = await evaluationsService.getEnhancedDetailsByName(namespace, evaluationId)
-        setEvaluation(data)
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Failed to Load Evaluation",
-          description: error instanceof Error ? error.message : "An unexpected error occurred"
-        })
-      } finally {
-        setLoading(false)
-      }
+      await loadEvaluation()
+      setLoading(false)
     }
 
-    loadEvaluation()
-  }, [evaluationId, namespace])
+    initialLoad()
+  }, [loadEvaluation])
+
+  // Auto-refresh for running evaluation
+  useEffect(() => {
+    if (!evaluation) return
+
+    const status = (evaluation.status as Record<string, unknown>)?.phase as string
+    const isRunning = status === "running" || status === "evaluating"
+
+    if (!isRunning) return
+
+    const intervalId = setInterval(() => {
+      loadEvaluation()
+    }, 5000) // Poll every 5 seconds when evaluation is running
+
+    return () => clearInterval(intervalId)
+  }, [evaluation, loadEvaluation])
 
   const handleCancel = async () => {
     if (!evaluation) return
@@ -141,8 +160,7 @@ export function EnhancedEvaluationDetailView({ evaluationId, namespace }: Enhanc
       })
       
       // Reload evaluation data
-      const data = await evaluationsService.getEnhancedDetailsByName(namespace, evaluationId)
-      setEvaluation(data)
+      await loadEvaluation()
     } catch (error) {
       toast({
         variant: "destructive",

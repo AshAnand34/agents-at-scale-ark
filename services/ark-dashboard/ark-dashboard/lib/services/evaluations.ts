@@ -316,23 +316,45 @@ export const evaluationsService = {
    */
   async getByQueryRef(namespace: string, queryName: string, enhanced: boolean = false): Promise<Evaluation[] | EnhancedEvaluationResponse[]> {
     try {
-      // Fetch all evaluations and filter by query reference
-      // Since the list API doesn't include spec data, we'll need to use naming patterns
+      // Fetch all evaluations with details to access the queryRef in spec
       const allEvaluations = enhanced 
         ? (await apiClient.get<EnhancedEvaluationListResponse>(`/api/v1/namespaces/${namespace}/evaluations?enhanced=true`)).items
         : await this.getAll(namespace)
       
-      // Filter evaluations that likely reference this query based on naming pattern
-      const matchingEvaluations = allEvaluations.filter(evaluation => {
-        // Check if evaluation name contains the query name
-        // Pattern: {evaluator-name}-{query-name}-eval
-        const evaluationName = evaluation.name.toLowerCase()
-        const queryNameLower = queryName.toLowerCase()
-        
-        // Remove common suffixes and check if query name is in the evaluation name
-        const nameWithoutSuffix = evaluationName.replace(/-eval$/, '')
-        return nameWithoutSuffix.includes(queryNameLower)
-      })
+      // We need to fetch detailed info for each evaluation to check the queryRef
+      // This is inefficient but necessary since the list API doesn't include spec data
+      const matchingEvaluations: (Evaluation | EnhancedEvaluationResponse)[] = []
+      
+      for (const evaluation of allEvaluations) {
+        try {
+          // Fetch detailed evaluation to access the spec
+          const detailed = enhanced 
+            ? await this.getEnhancedDetailsByName(namespace, evaluation.name)
+            : await this.getDetailsByName(namespace, evaluation.name)
+          
+          if (detailed?.spec) {
+            // Check if this evaluation references the query
+            // The queryRef can be in different locations depending on evaluation type
+            const spec = detailed.spec as any
+            
+            // Check for queryRef in spec.config.queryRef (event evaluations)
+            const configQueryRef = spec.config?.queryRef as { name?: string, namespace?: string } | undefined
+            if (configQueryRef?.name === queryName) {
+              matchingEvaluations.push(evaluation)
+              continue
+            }
+            
+            // Check for queryRef directly in spec (query evaluations)
+            const directQueryRef = spec.queryRef as { name?: string, namespace?: string } | undefined
+            if (directQueryRef?.name === queryName) {
+              matchingEvaluations.push(evaluation)
+            }
+          }
+        } catch (error) {
+          // If we can't fetch details for an evaluation, skip it
+          console.warn(`Failed to fetch details for evaluation ${evaluation.name}:`, error)
+        }
+      }
       
       return matchingEvaluations
     } catch (error) {

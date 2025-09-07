@@ -73,6 +73,15 @@ class QueryEvaluationProvider(EvaluationProvider):
             input_text = query_resource["spec"].get("input", "")
             logger.debug(f"ARK-EVALUATOR: Extracted input: {input_text[:100]}...")
             
+            # Extract actual agent name from query targets for agent context resolution
+            actual_agent_name = None
+            if query_resource.get("spec", {}).get("targets"):
+                targets = query_resource["spec"]["targets"]
+                agent_targets = [t for t in targets if t.get("type") == "agent"]
+                if agent_targets:
+                    actual_agent_name = agent_targets[0].get("name")
+                    logger.info(f"ARK-EVALUATOR: Found agent target: {actual_agent_name}")
+            
             output_text = ""
             if query_resource.get("status", {}).get("responses"):
                 responses = query_resource["status"]["responses"]
@@ -113,12 +122,15 @@ class QueryEvaluationProvider(EvaluationProvider):
         if not model_ref:
             raise HTTPException(status_code=422, detail="Query evaluation requires model configuration in parameters")
         
-        # Create evaluation request
+        # Create evaluation request with proper agent name for context resolution
+        target_name = response_target or actual_agent_name or "query-response"
+        logger.info(f"ARK-EVALUATOR: Using target name for evaluation: {target_name}")
+        
         eval_request = EvaluationRequest(
             queryId=f"query-evaluation-{query_name}",
             input=input_text,
             responses=[Response(
-                target=QueryTarget(type="agent", name=response_target or "query-response"),
+                target=QueryTarget(type="agent", name=target_name),
                 content=output_text
             )],
             query={"metadata": {"name": query_name, "namespace": query_namespace}, "spec": {"input": input_text}},

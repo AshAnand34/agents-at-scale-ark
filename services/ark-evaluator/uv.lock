@@ -131,7 +131,7 @@ wheels = [
 
 [[package]]
 name = "ark-evaluator"
-version = "0.1.0"
+version = "0.1.32"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
@@ -190,7 +190,7 @@ dev = [
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.9.0" },
     { name = "anyio", marker = "extra == 'dev'", specifier = ">=3.0.0" },
-    { name = "ark-sdk", path = "ark_sdk-0.1.31-py3-none-any.whl" },
+    { name = "ark-sdk", path = "ark_sdk-0.1.32-py3-none-any.whl" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
     { name = "datasets", specifier = ">=2.14.0" },
     { name = "fastapi", specifier = ">=0.104.0" },
@@ -237,8 +237,8 @@ dev = [
 
 [[package]]
 name = "ark-sdk"
-version = "0.1.31"
-source = { path = "ark_sdk-0.1.31-py3-none-any.whl" }
+version = "0.1.32"
+source = { path = "ark_sdk-0.1.32-py3-none-any.whl" }
 dependencies = [
     { name = "kubernetes" },
     { name = "kubernetes-asyncio" },
@@ -248,7 +248,7 @@ dependencies = [
     { name = "urllib3" },
 ]
 wheels = [
-    { filename = "ark_sdk-0.1.31-py3-none-any.whl", hash = "sha256:5897096d3b11df68eaa4ffbdc509d85ce8d529b9562e3a20bc6c902041f13728" },
+    { filename = "ark_sdk-0.1.32-py3-none-any.whl", hash = "sha256:8b5de9c017f69f372fca9d90b0192fa6bc1ade7c83906a0e9cced44f4127ba08" },
 ]
 
 [package.metadata]
