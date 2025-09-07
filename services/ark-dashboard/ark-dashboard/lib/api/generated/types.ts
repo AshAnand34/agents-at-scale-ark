@@ -2680,9 +2680,9 @@ export interface components {
             /** Memoryname */
             memoryName: string;
             /** Queries */
-            queries: string[];
+            queries?: string[] | null;
             /** Messagecount */
-            messageCount: number;
+            messageCount?: number | null;
             /** Lastactivity */
             lastActivity?: string | null;
         };

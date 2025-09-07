@@ -24,12 +24,12 @@ The Evaluator LLM service implements the LLM-as-a-Judge pattern, providing autom
 Deploy the evaluator service using Helm:
 
 ```bash
-# Install the evaluator-llm service
-helm install evaluator-llm ./services/evaluator-llm/chart
+# Install the ark-evaluator service
+helm install ark-evaluator ./services/ark-evaluator/chart
 
 # Verify deployment
-kubectl get pods -l app.kubernetes.io/name=evaluator-llm
-kubectl get evaluator evaluator-llm
+kubectl get pods -l app.kubernetes.io/name=ark-evaluator
+kubectl get evaluator ark-evaluator
 ```
 
 ## Usage
@@ -58,18 +58,20 @@ The evaluator is automatically created by the Helm chart, but you can customize 
 apiVersion: ark.mckinsey.com/v1alpha1
 kind: Evaluator
 metadata:
-  name: llm-evaluator
+  name: ark-evaluator
 spec:
   type: llm-judge
-  description: "LLM-as-a-Judge evaluator for query assessment"
+  description: "Evaluator for query assessment"
   address:
     valueFrom:
       serviceRef:
-        name: evaluator-llm
+        name: ark-evaluator
         port: "http"
         path: "/evaluate"
-  modelRef:
-    name: evaluation-model
+  parameters:
+  - name: model.name
+    value: evaluation-model
+
 ```
 
 ### 3. Use in Queries
@@ -179,10 +181,10 @@ Monitor evaluator performance:
 
 ```bash
 # Check service logs
-kubectl logs -l app.kubernetes.io/name=evaluator-llm
+kubectl logs -l app.kubernetes.io/name=ark-evaluator
 
 # View evaluator status
-kubectl get evaluator evaluator-llm -o yaml
+kubectl get evaluator ark-evaluator -o yaml
 
 # Monitor query evaluation phases
 kubectl get query -w
@@ -193,7 +195,7 @@ kubectl get query -w
 For local development:
 
 ```bash
-cd services/evaluator-llm
+cd services/ark-evaluator
 
 # Install dependencies
 make init

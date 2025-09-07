@@ -8,9 +8,9 @@ Evaluations use the Ark default service that provides an LLM-as-a-Judge to asses
 
 Before using evaluations, ensure you have:
 
-1. **Evaluator Service**: Deploy the `evaluator-llm` service
+1. **Evaluator Service**: Deploy the `ark-evaluator` service
    ```bash
-   helm install evaluator-llm ./services/evaluator-llm/chart
+   helm install ark-evaluator ./services/ark-evaluator/chart
    ```
 
 2. **Default Model**: Create a default model for the evaluator to use
@@ -47,7 +47,7 @@ Before using evaluations, ensure you have:
     address:
       valueFrom: # use valueFrom when the execution service is in the same namespace 
         serviceRef:
-          name: evaluator-llm
+          name: ark-evaluator
           port: "http"
           path: "/evaluate"
     modelRef:
@@ -136,7 +136,7 @@ spec:
   address:
     valueFrom:
       serviceRef:
-        name: evaluator-llm
+        name: ark-evaluator
         port: "http"
         path: "/evaluate"
   selector:
@@ -189,7 +189,7 @@ spec:
   address:
     valueFrom:
       serviceRef:
-        name: evaluator-llm
+        name: ark-evaluator
         port: "http"
         path: "/evaluate"
   parameters:
@@ -389,7 +389,7 @@ kubectl get evaluation dataset-math-eval -w
 
 ```bash
 # Check evaluation logs
-kubectl logs -l app=evaluator-llm --tail=50
+kubectl logs -l app=ark-evaluator --tail=50
 
 # View evaluation details
 kubectl describe evaluation direct-math-eval
@@ -496,9 +496,9 @@ spec:
 ### Common Issues
 
 **Evaluation stuck in pending**:
-- Check evaluator service health: `kubectl get pods -l app=evaluator-llm`
+- Check evaluator service health: `kubectl get pods -l app=ark-evaluator`
 - Verify evaluator resource exists: `kubectl get evaluator evaluator-llm`
-- Check service logs: `kubectl logs -l app=evaluator-llm`
+- Check service logs: `kubectl logs -l app=ark-evaluator`
 
 **Low evaluation scores**:
 - Review evaluation criteria scope
@@ -510,8 +510,8 @@ spec:
 
 ```bash
 # Check evaluator service
-kubectl get service evaluator-llm
-kubectl get endpoints evaluator-llm
+kubectl get service ark-evaluator
+kubectl get endpoints ark-evaluator
 
 # Test evaluator endpoint
 kubectl port-forward service/evaluator-llm 8080:8000

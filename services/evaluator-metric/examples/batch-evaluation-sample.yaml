@@ -50,7 +50,7 @@ metadata:
 spec:
   description: "Primary evaluator (placeholder for batch mode)"
   address:
-    value: http://evaluator-metric.default.svc.cluster.local:8000
+    value: http://evaluator-metric.default.svc.cluster.local:8000/metric
 ---
 apiVersion: ark.mckinsey.com/v1alpha1
 kind: Evaluator
@@ -60,7 +60,7 @@ metadata:
 spec:
   description: "Performance metrics evaluator"
   address:
-    value: http://evaluator-metric.default.svc.cluster.local:8000
+    value: http://evaluator-metric.default.svc.cluster.local:8000/metric
 ---
 apiVersion: ark.mckinsey.com/v1alpha1
 kind: Evaluator
@@ -70,7 +70,7 @@ metadata:
 spec:
   description: "Quality assessment evaluator"
   address:
-    value: http://evaluator-llm.default.svc.cluster.local:8000
+    value: http://ark-evaluator.default.svc.cluster.local:8000/evaluate
   modelRef:
     name: gpt-4
     namespace: default
