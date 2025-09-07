@@ -54,23 +54,23 @@ $(ARK_EVALUATOR_STAMP_TEST): $(ARK_EVALUATOR_STAMP_DEPS)
 	@touch $@
 
 # Build target
-$(ARK_EVALUATOR_SERVICE_NAME)-build: $(ARK_EVALUATOR_STAMP_BUILD) # HELP: Build LLM evaluator service Docker image
+$(ARK_EVALUATOR_SERVICE_NAME)-build: $(ARK_EVALUATOR_STAMP_BUILD) # HELP: Build evaluator service Docker image
 $(ARK_EVALUATOR_STAMP_BUILD): $(ARK_EVALUATOR_STAMP_DEPS)
 	cd $(ARK_EVALUATOR_SERVICE_DIR) && docker build -t $(EVALUATOR_IMAGE):$(EVALUATOR_TAG) -f Dockerfile .
 	@touch $@
 
 # Install target
-$(ARK_EVALUATOR_SERVICE_NAME)-install: $(ARK_EVALUATOR_STAMP_INSTALL) # HELP: Deploy LLM evaluator service to cluster
+$(ARK_EVALUATOR_SERVICE_NAME)-install: $(ARK_EVALUATOR_STAMP_INSTALL) # HELP: Deploy evaluator service to cluster
 $(ARK_EVALUATOR_STAMP_INSTALL): $(ARK_EVALUATOR_STAMP_BUILD)
 	./scripts/build-and-push.sh -i $(EVALUATOR_IMAGE) -t $(EVALUATOR_TAG) -f $(ARK_EVALUATOR_SERVICE_DIR)/Dockerfile -c $(ARK_EVALUATOR_SERVICE_DIR)
-	cd $(ARK_EVALUATOR_SERVICE_DIR) && helm upgrade --install evaluator-llm ./chart -n $(ARK_EVALUATOR_NAMESPACE) --create-namespace --set app.image.tag=$(EVALUATOR_TAG)
+	cd $(ARK_EVALUATOR_SERVICE_DIR) && helm upgrade --install ark-evaluator ./chart -n $(ARK_EVALUATOR_NAMESPACE) --create-namespace --set app.image.tag=$(EVALUATOR_TAG)
 	@touch $@
 
 # Uninstall target
-$(ARK_EVALUATOR_SERVICE_NAME)-uninstall: # HELP: Remove LLM evaluator service from cluster
-	helm uninstall evaluator-llm -n $(ARK_EVALUATOR_NAMESPACE) --ignore-not-found
+$(ARK_EVALUATOR_SERVICE_NAME)-uninstall: # HELP: Remove evaluator service from cluster
+	helm uninstall ark-evaluator -n $(ARK_EVALUATOR_NAMESPACE) --ignore-not-found
 	rm -f $(ARK_EVALUATOR_STAMP_INSTALL)
 
 # Dev target
-$(ARK_EVALUATOR_SERVICE_NAME)-dev: $(ARK_EVALUATOR_STAMP_DEPS) # HELP: Run LLM evaluator service in development mode
+$(ARK_EVALUATOR_SERVICE_NAME)-dev: $(ARK_EVALUATOR_STAMP_DEPS) # HELP: Run evaluator service in development mode
 	cd $(ARK_EVALUATOR_SERVICE_DIR) && uv run python -m src.evaluator.main
