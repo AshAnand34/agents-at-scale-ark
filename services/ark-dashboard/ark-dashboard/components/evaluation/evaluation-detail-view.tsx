@@ -22,6 +22,7 @@ import { evaluationsService } from "@/lib/services/evaluations"
 import { useDelayedLoading } from "@/lib/hooks/use-delayed-loading"
 import { EnhancedEvaluationDetailView } from "./enhanced-evaluation-detail-view"
 import { EventMetricsDisplay } from "./event-metrics-display"
+import { MetricsEvaluationDisplay } from "./metrics-evaluation-display"
 import type { components } from "@/lib/api/generated/types"
 
 type EvaluationDetailResponse = components["schemas"]["EvaluationDetailResponse"]
@@ -245,6 +246,17 @@ export function EvaluationDetailView({ evaluationId, namespace, enhanced = false
     metadata?.total_rules !== undefined ||
     metadata?.events_analyzed !== undefined
   
+  // Check if this is a metrics-based evaluation
+  const evaluatorSpec = spec?.evaluator as { name?: string }
+  const isMetricsEvaluation = (
+    evaluatorSpec?.name?.includes('metrics') || 
+    evaluatorSpec?.name?.includes('performance') ||
+    evaluatorSpec?.name?.includes('cost') ||
+    (metadata?.cost !== undefined && metadata?.performance_score !== undefined) ||
+    (metadata?.token_score !== undefined && metadata?.quality_score !== undefined) ||
+    reasoning?.includes('threshold violations')
+  )
+  
   // Debug logging for development
   if (process.env.NODE_ENV === 'development') {
     console.log('EvaluationDetailView - metadata:', metadata)
@@ -433,6 +445,14 @@ export function EvaluationDetailView({ evaluationId, namespace, enhanced = false
           queryName={queryRef?.name}
           evaluationSpec={spec}
         />
+      ) : isMetricsEvaluation && hasMetadata ? (
+        <MetricsEvaluationDisplay
+          metadata={metadata}
+          evaluationSpec={spec}
+          reasoning={reasoning}
+          overallPassed={status?.passed === true}
+          overallScore={typeof status?.score === 'number' ? status.score : (typeof status?.score === 'string' ? parseFloat(status.score) : undefined)}
+        />
       ) : hasMetadata ? (
         <Card>
           <CardHeader>
@@ -462,8 +482,8 @@ export function EvaluationDetailView({ evaluationId, namespace, enhanced = false
         </Card>
       ) : null}
 
-      {/* Reasoning Card */}
-      {reasoning && (
+      {/* Reasoning Card - only show for non-metrics evaluations */}
+      {reasoning && !isMetricsEvaluation && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
