@@ -55,7 +55,7 @@ jobs:
         working-directory: ./infrastructure/providers/gcp
         run: |
           set -euo pipefail
-          terraform plan -no-color -input=false -var="gcp_region=${{ vars.GCP_REGION }}" -var="gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" | tee plan.log 
+          terraform plan -no-color -input=false -var="gcp_region=${{ vars.GCP_REGION }}" -var="gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" -var="cluster_name=${{ vars.GCP_GKE_CLUSTER_NAME }}"| tee plan.log 
         continue-on-error: true
 
       - uses: actions/github-script@v6
