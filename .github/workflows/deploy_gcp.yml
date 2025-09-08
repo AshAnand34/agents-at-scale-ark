@@ -166,6 +166,8 @@ jobs:
             --set containerRegistry.server=${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }} \
             --set containerRegistry.username=${{ secrets.DOCKER_REGISTRY_USERNAME || github.actor }} \
             --set containerRegistry.password=${{ secrets.DOCKER_REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }} \
+            --set serviceAccount.create=false \
+            --set serviceAccount.name=ark-controller \
             --set rbac.enable=true \
             --timeout=5m
           
