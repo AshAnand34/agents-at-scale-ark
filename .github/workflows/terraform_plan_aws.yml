@@ -5,7 +5,7 @@ on:
     types: [opened, reopened, edited, synchronize]
     branches: ['main']
     paths:
-        - 'infrastructure/aws/**'
+        - 'infrastructure/providers/aws/**'
         - '.github/workflows/terraform_plan_aws.yaml'
 
   workflow_dispatch:
