@@ -335,10 +335,11 @@ export const evaluationsService = {
           if (detailed?.spec) {
             // Check if this evaluation references the query
             // The queryRef can be in different locations depending on evaluation type
-            const spec = detailed.spec as any
+            const spec = detailed.spec as Record<string, unknown>
             
             // Check for queryRef in spec.config.queryRef (event evaluations)
-            const configQueryRef = spec.config?.queryRef as { name?: string, namespace?: string } | undefined
+            const config = spec.config as Record<string, unknown> | undefined
+            const configQueryRef = config?.queryRef as { name?: string, namespace?: string } | undefined
             if (configQueryRef?.name === queryName) {
               matchingEvaluations.push(evaluation)
               continue

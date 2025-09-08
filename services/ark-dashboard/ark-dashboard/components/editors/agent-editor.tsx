@@ -104,7 +104,7 @@ export function AgentEditor({
       };
       loadTools();
     }
-  }, [open, namespace]);
+  }, [open, namespace, agent?.tools]);
 
   useEffect(() => {
     if (agent) {
