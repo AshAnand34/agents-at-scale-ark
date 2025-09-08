@@ -73,4 +73,4 @@ $(ARK_EVALUATOR_SERVICE_NAME)-uninstall: # HELP: Remove evaluator service from c
 
 # Dev target
 $(ARK_EVALUATOR_SERVICE_NAME)-dev: $(ARK_EVALUATOR_STAMP_DEPS) # HELP: Run evaluator service in development mode
-	cd $(ARK_EVALUATOR_SERVICE_DIR) && uv run python -m src.evaluator.main
+	cd $(ARK_EVALUATOR_SERVICE_DIR) && uv run python -m evaluator
