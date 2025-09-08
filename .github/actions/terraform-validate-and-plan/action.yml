@@ -180,15 +180,12 @@ runs:
         fi
 
         # extract summary line like: "Plan: 1 to add, 0 to change, 0 to destroy."
-        PLAN_SUMMARY=$(grep -Eo "^Plan: .*" plan.log | tail -n1 || true)
+        PLAN_SUMMARY=$(grep -Eo "^(Plan: |No changes).*" plan.log | tail -n1 || true)
         PLAN_RAW=$(sed -n '1,60000p' plan.log || true)
         printf "%s" "$PLAN_RAW" > plan_trimmed.log
 
         echo "plan_outcome=$PLAN_OUTCOME" >> $GITHUB_OUTPUT
         echo "plan_summary=$PLAN_SUMMARY" >> $GITHUB_OUTPUT
-        # escape newlines for composite output safety
-        PLAN_ESCAPED=$(sed -e ':a' -e 'N' -e '$!ba' -e 's/`/\\`/g' plan_trimmed.log)
-        echo "plan=$PLAN_ESCAPED" >> $GITHUB_OUTPUT
 
     - name: Post plan to PR (optional)
       if: ${{ inputs.github_token != '' && github.event_name == 'pull_request' }}
