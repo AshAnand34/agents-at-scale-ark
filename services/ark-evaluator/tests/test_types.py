@@ -99,7 +99,7 @@ class TestEvaluationParameters:
         
         # "all" scope returns all criteria except "all"
         params = EvaluationParameters(scope="all")
-        expected_all = ["relevance", "accuracy", "conciseness", "completeness", "clarity", "usefulness"]
+        expected_all = ["relevance", "accuracy", "conciseness", "completeness", "clarity", "usefulness", "appropriateness", "compliance", "refusal_handling"]
         assert set(params.get_scope_list()) == set(expected_all)
 
     def test_from_request_params_method(self):
@@ -159,7 +159,7 @@ class TestEvaluationParameters:
             request_params = {"min_score": "invalid"}
             params = EvaluationParameters.from_request_params(request_params)
             assert params.min_score == 0.7  # Should default to 0.7
-            mock_logger.warning.assert_called()
+            mock_logger.error.assert_called()
 
     def test_to_dict_method(self):
         """Test the to_dict method"""
