@@ -1215,7 +1215,7 @@ export interface components {
             /** Prompt */
             prompt?: string | null;
             /** Status */
-            status?: string | null;
+            status: string;
             /** Annotations */
             annotations?: {
                 [key: string]: string;
@@ -2680,9 +2680,9 @@ export interface components {
             /** Memoryname */
             memoryName: string;
             /** Queries */
-            queries: string[];
+            queries?: string[] | null;
             /** Messagecount */
-            messageCount: number;
+            messageCount?: number | null;
             /** Lastactivity */
             lastActivity?: string | null;
         };

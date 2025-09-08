@@ -126,8 +126,12 @@ func (v *AgentCustomValidator) validateCustomTool(ctx context.Context, namespace
 		return warnings, fmt.Errorf("tool[%d]: %s tools must specify a name", index, tool.Type)
 	}
 
+	// DEFERRED VALIDATION: Check if tool exists but don't block creation if missing
 	if err := v.ValidateLoadTool(ctx, tool.Name, namespace); err != nil {
-		return warnings, fmt.Errorf("tool[%d]: %s", index, err)
+		// Add warning instead of blocking
+		warning := fmt.Sprintf("tool[%d]: %s (agent will be in Pending state until tool is available)", index, err)
+		warnings = append(warnings, warning)
+		// Don't return error - allow creation to proceed
 	}
 
 	return warnings, nil

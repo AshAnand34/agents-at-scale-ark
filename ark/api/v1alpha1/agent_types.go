@@ -63,7 +63,28 @@ type AgentSpec struct {
 	OutputSchema *runtime.RawExtension `json:"outputSchema,omitempty"`
 }
 
-type AgentStatus struct{}
+// AgentPhase represents the phase of an Agent in its lifecycle
+type AgentPhase string
+
+const (
+	// AgentPhasePending - agent accepted but tool dependencies not resolved
+	AgentPhasePending AgentPhase = "Pending"
+	// AgentPhaseRunning - all dependencies resolved, agent is active
+	AgentPhaseRunning AgentPhase = "Running"
+	// AgentPhaseSucceeded - agent completed successfully
+	AgentPhaseSucceeded AgentPhase = "Succeeded"
+	// AgentPhaseFailed - agent terminated with errors
+	AgentPhaseFailed AgentPhase = "Failed"
+	// AgentPhaseUnknown - state cannot be determined
+	AgentPhaseUnknown AgentPhase = "Unknown"
+)
+
+type AgentStatus struct {
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default:="Pending"
+	// The phase of an Agent is a simple, high-level summary of where the Agent is in its lifecycle.
+	Phase AgentPhase `json:"phase"`
+}
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status

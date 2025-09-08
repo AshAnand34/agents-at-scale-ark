@@ -188,6 +188,18 @@ spec:
                 type: array
             type: object
           status:
+            properties:
+              phase:
+                description: The phase of an Agent is a simple, high-level summary
+                  of where the Agent is in its lifecycle.
+                type: string
+                default: "Pending"
+                enum:
+                - Pending
+                - Running
+                - Succeeded
+                - Failed
+                - Unknown
             type: object
         type: object
     served: true
