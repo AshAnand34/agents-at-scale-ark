@@ -51,8 +51,8 @@ $(ARK_DASHBOARD_STAMP_DEPS): $(ARK_DASHBOARD_SERVICE_SOURCE_DIR)/package.json $(
 
 # Test target
 $(ARK_DASHBOARD_SERVICE_NAME)-test: $(ARK_DASHBOARD_STAMP_TEST) # HELP: Run ARK Dashboard UI tests
-$(ARK_DASHBOARD_STAMP_TEST): $(ARK_DASHBOARD_STAMP_DEPS)
-	cd $(ARK_DASHBOARD_SERVICE_SOURCE_DIR) && npm audit --audit-level=critical || true && npm run test
+$(ARK_DASHBOARD_STAMP_TEST): $(ARK_DASHBOARD_STAMP_DEPS) # This command will fail if any critical vulnerabilities are identified
+	cd $(ARK_DASHBOARD_SERVICE_SOURCE_DIR) && npm audit --audit-level=critical && npm run test
 	@touch $@
 
 # Build target
