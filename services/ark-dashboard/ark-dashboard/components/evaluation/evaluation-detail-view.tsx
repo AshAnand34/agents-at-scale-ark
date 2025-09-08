@@ -5,6 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from "@/components/ui/collapsible"
 import { 
   Play, 
   Square, 
@@ -15,7 +20,9 @@ import {
   Settings,
   FileText,
   BarChart3,
-  Sparkles
+  Sparkles,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { evaluationsService } from "@/lib/services/evaluations"
@@ -23,6 +30,7 @@ import { useDelayedLoading } from "@/lib/hooks/use-delayed-loading"
 import { EnhancedEvaluationDetailView } from "./enhanced-evaluation-detail-view"
 import { EventMetricsDisplay } from "./event-metrics-display"
 import { MetricsEvaluationDisplay } from "./metrics-evaluation-display"
+import { QualityEvaluationDisplay } from "./quality-evaluation-display"
 import type { components } from "@/lib/api/generated/types"
 
 type EvaluationDetailResponse = components["schemas"]["EvaluationDetailResponse"]
@@ -105,6 +113,8 @@ export function EvaluationDetailView({ evaluationId, namespace, enhanced = false
   const [canceling, setCanceling] = useState(false)
   const [useEnhanced, setUseEnhanced] = useState(enhanced)
   const [enhancedAvailable, setEnhancedAvailable] = useState(false)
+  const [overviewOpen, setOverviewOpen] = useState(false)
+  const [configurationOpen, setConfigurationOpen] = useState(false)
   const showLoading = useDelayedLoading(loading)
 
   const loadEvaluation = useCallback(async () => {
@@ -257,11 +267,34 @@ export function EvaluationDetailView({ evaluationId, namespace, enhanced = false
     reasoning?.includes('threshold violations')
   )
   
+  // Check if this is a quality-based evaluation (LLM assessments)
+  const isQualityEvaluation = !isEventEvaluation && !isMetricsEvaluation && hasMetadata && (
+    evaluatorSpec?.name?.includes('quality') ||
+    evaluatorSpec?.name?.includes('llm') ||
+    evaluatorSpec?.name?.includes('assessment') ||
+    Object.keys(metadata).some(key => 
+      key.toLowerCase().includes('accuracy') ||
+      key.toLowerCase().includes('relevance') ||
+      key.toLowerCase().includes('coherence') ||
+      key.toLowerCase().includes('completeness') ||
+      key.toLowerCase().includes('assessment') ||
+      key.toLowerCase().includes('criterion') ||
+      key.toLowerCase().includes('clarity') ||
+      key.toLowerCase().includes('refusal_handling') ||
+      key.toLowerCase().includes('appropriateness')
+    ) ||
+    reasoning // LLM evaluations often have reasoning text
+  )
+  
   // Debug logging for development
   if (process.env.NODE_ENV === 'development') {
     console.log('EvaluationDetailView - metadata:', metadata)
-    console.log('EvaluationDetailView - rule_results type:', typeof metadata?.rule_results)
-    console.log('EvaluationDetailView - rule_results value:', metadata?.rule_results)
+    console.log('EvaluationDetailView - evaluatorSpec:', evaluatorSpec)
+    console.log('EvaluationDetailView - isEventEvaluation:', isEventEvaluation)
+    console.log('EvaluationDetailView - isMetricsEvaluation:', isMetricsEvaluation)
+    console.log('EvaluationDetailView - isQualityEvaluation:', isQualityEvaluation)
+    console.log('EvaluationDetailView - hasMetadata:', hasMetadata)
+    console.log('EvaluationDetailView - reasoning present:', !!reasoning)
   }
 
   return (
@@ -295,14 +328,25 @@ export function EvaluationDetailView({ evaluationId, namespace, enhanced = false
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Overview Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Overview
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Collapsible open={overviewOpen} onOpenChange={setOverviewOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Overview
+                  </div>
+                  {overviewOpen ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4 pt-0">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Type</p>
@@ -348,18 +392,31 @@ export function EvaluationDetailView({ evaluationId, namespace, enhanced = false
                 </div>
               </>
             )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
         {/* Configuration Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Configuration
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Collapsible open={configurationOpen} onOpenChange={setConfigurationOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Configuration
+                  </div>
+                  {configurationOpen ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4 pt-0">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Evaluator</p>
               <p className="font-medium">{evaluatorInfo?.name || "-"}</p>
@@ -385,11 +442,13 @@ export function EvaluationDetailView({ evaluationId, namespace, enhanced = false
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
       </div>
 
-      {/* Metrics Display - Use EventMetricsDisplay for event evaluations */}
+      {/* Evaluation Display - Use appropriate display based on evaluation type */}
       {isEventEvaluation && hasMetadata ? (
         <EventMetricsDisplay 
           eventMetadata={{
@@ -453,6 +512,14 @@ export function EvaluationDetailView({ evaluationId, namespace, enhanced = false
           overallPassed={status?.passed === true}
           overallScore={typeof status?.score === 'number' ? status.score : (typeof status?.score === 'string' ? parseFloat(status.score) : undefined)}
         />
+      ) : isQualityEvaluation ? (
+        <QualityEvaluationDisplay
+          metadata={metadata}
+          evaluationSpec={spec}
+          reasoning={reasoning}
+          overallPassed={status?.passed === true}
+          overallScore={typeof status?.score === 'number' ? status.score : (typeof status?.score === 'string' ? parseFloat(status.score) : undefined)}
+        />
       ) : hasMetadata ? (
         <Card>
           <CardHeader>
@@ -482,8 +549,8 @@ export function EvaluationDetailView({ evaluationId, namespace, enhanced = false
         </Card>
       ) : null}
 
-      {/* Reasoning Card - only show for non-metrics evaluations */}
-      {reasoning && !isMetricsEvaluation && (
+      {/* Reasoning Card - only show for basic evaluations (not metrics or quality) */}
+      {reasoning && !isMetricsEvaluation && !isQualityEvaluation && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
