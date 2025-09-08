@@ -159,6 +159,96 @@ make ark-evaluator-dev      # Run service locally
 make ark-evaluator-test     # Run tests
 ```
 
+Running `make ark-evaluator-dev` sets up the service exposing two endpoints at `http://localhost:8000`. Visit `http://localhost:8000/docs` to see the interactive API documentation.
+
+### Testing `/evaluate-metrics`
+
+The metrics endpoint performs deterministic analysis without requiring LLM setup. See `/services/ark-evaluator/src/evaluator/metrics/` for the underlying logic.
+
+```bash
+curl -X POST http://localhost:8000/evaluate-metrics \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "direct",
+    "config": {
+      "input": "What is 2+2?", 
+      "output": "2+2 equals 4"
+    },
+    "parameters": {"temperature": "0.7"},
+    "evaluatorName": "test-evaluator"
+  }'
+```
+
+### Testing `/evaluate`
+
+The evaluate endpoint requires deployed ARK resources for LLM-as-a-Judge evaluation.
+
+**1. Define a model:**
+```bash
+kubectl apply -f - <<EOF
+apiVersion: ark/v1alpha1
+kind: Model
+metadata:
+  name: default
+  namespace: default
+spec:
+  type: azure
+  config:
+    model: gpt-4o-mini
+  credentials:
+    secretRef:
+      name: azure-openai-secret
+      key: api-key
+EOF
+```
+
+**2. Define an evaluator:**
+```bash
+kubectl apply -f - <<EOF
+apiVersion: ark/v1alpha1
+kind: Evaluator
+metadata:
+  name: test-ark-evaluator
+  namespace: default
+spec:
+  address:
+    value: http://ark-evaluator.default.svc.cluster.local:8000/evaluate
+  parameters:
+  - name: model.name
+    value: default
+EOF
+```
+
+**3. Send evaluation request:**
+```bash
+curl -X POST http://localhost:8000/evaluate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "direct",
+    "config": {
+      "input": "What is the capital of France?",
+      "output": "Paris"
+    },
+    "parameters": {"temperature": "0.7"},
+    "evaluatorName": "test-ark-evaluator",
+    "model": {
+      "name": "default",
+      "type": "azure", 
+      "namespace": "default"
+    }
+  }'
+```
+
+### Troubleshooting
+
+**Token expiration issues:**
+If your secret has expired, update it with a new token:
+
+```bash
+NEW_TOKEN="your-new-token-here"
+kubectl patch secret azure-openai-secret -n default --type='json' -p="[{\"op\": \"replace\", \"path\": \"/data/token\", \"value\": \"$(echo -n $NEW_TOKEN | base64)\"}]"
+```
+
 ## Use Cases
 
 - **Production Monitoring**: Real-time quality assessment, cost tracking, SLA compliance
