@@ -36,7 +36,7 @@ images:
     context: ./services/ark-dashboard
 
   ark-controller:
-    image: controller
+    image: ark-controller
     dockerfile: ./ark/Dockerfile
     context: ./ark
 
@@ -90,8 +90,8 @@ deployments:
           container:
             image:
               repository: ${runtime.images.ark-controller.image}
-              tag: ${runtime.images.ark-controller.tag}
-            # Override resources for local development
+              tag: ${runtime.images.ark-controller.tag}            
+              pullPolicy: Always
             resources:
               limits:
                 memory: "2048Mi"
@@ -138,7 +138,7 @@ dev:
       enabled: true
 
   ark-controller:
-    imageSelector: controller
+    imageSelector: ark-controller
     devImage: golang:1.24-bookworm
     command:
       ["sh", "-c", "cd /workspace && go run cmd/main.go --leader-elect=false"]
@@ -156,9 +156,11 @@ dev:
           - out/
           - .git/
           - "*.log"
+        onUpload:
+          restartContainer: true
     # Restart container when Go files change so that the code is recompiled
-    # restartHelper:
-    #   inject: true
+    restartHelper:
+      inject: true
     # Enable SSH for IDE integration
     ssh:
       enabled: true
