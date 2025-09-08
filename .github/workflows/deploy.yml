@@ -46,61 +46,22 @@ permissions:
   id-token: write
 
 jobs:
-  check_version:
+  resolve_version:
     runs-on: ubuntu-24.04
     outputs:
-      version: ${{ steps.ark_version.outputs.version }}
-      clean_version: ${{ steps.ark_version.outputs.clean_version }}
-      sha: ${{ steps.get_sha.outputs.sha }}
-      has_version: ${{ steps.check_tag.outputs.has_version }}
+      version: ${{ steps.resolve.outputs.version }}
+      clean_version: ${{ steps.resolve.outputs.clean_version }}
+      sha: ${{ steps.resolve.outputs.sha }}
+      has_version: ${{ steps.resolve.outputs.has_version }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Resolve ARK version
+        id: resolve
+        uses: ./.github/actions/resolve-version
         with:
-          fetch-depth: 0
-          ref: main
-          
-      - name: Determine ARK version to deploy
-        id: ark_version
-        run: |
-          if [ -n "${{ github.event.inputs.ark_version }}" ]; then
-            INPUT_VERSION="${{ github.event.inputs.ark_version }}"
-            # Ensure version starts with 'v' for git tag lookup
-            if [[ "$INPUT_VERSION" =~ ^v ]]; then
-              VERSION="$INPUT_VERSION"
-            else
-              VERSION="v$INPUT_VERSION"
-            fi
-            echo "Using specified version: $VERSION"
-          else
-            VERSION="v$(cat version.txt | tr -d '\n')"
-            echo "Using version from version.txt: $VERSION"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "clean_version=$(echo $VERSION | sed 's/^v//')" >> $GITHUB_OUTPUT
+          ark_version: ${{ github.event.inputs.ark_version }}
 
-      - name: Check if version tag exists
-        id: check_tag
-        run: |
-          VERSION="${{ steps.ark_version.outputs.version }}"
-          if git rev-parse --verify "$VERSION" >/dev/null 2>&1; then
-            echo "has_version=true" >> $GITHUB_OUTPUT
-            echo "Version tag $VERSION exists"
-          else
-            echo "has_version=false" >> $GITHUB_OUTPUT
-            echo "Version tag $VERSION does not exist"
-          fi
-
-      - name: Get SHA for version tag
-        id: get_sha
-        if: steps.check_tag.outputs.has_version == 'true'
-        run: |
-          VERSION="${{ steps.ark_version.outputs.version }}"
-          SHA=$(git rev-list -n 1 "$VERSION")
-          echo "sha=$SHA" >> $GITHUB_OUTPUT
-          echo "Using SHA $SHA for version $VERSION"
-
-  deploy-containers:
-    needs: [check_version]
+  deploy:
+    needs: [resolve_version]
     if: ${{ inputs.deploy_containers }}
     runs-on: ubuntu-24.04
     strategy:
@@ -124,14 +85,14 @@ jobs:
     steps:
       - name: Validate version tag exists
         run: |
-          if [ "${{ needs.check_version.outputs.has_version }}" != "true" ]; then
+          if [ "${{ needs.resolve_version.outputs.has_version }}" != "true" ]; then
             echo "Error: Version tag is required for container deployment but does not exist"
             exit 1
           fi
 
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.check_version.outputs.sha }}
+          ref: ${{ needs.resolve_version.outputs.sha }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -153,14 +114,14 @@ jobs:
         with:
           path: ${{ matrix.path }}
           image: ${{ matrix.image }}
-          tag: ${{ needs.check_version.outputs.clean_version }}
+          tag: ${{ needs.resolve_version.outputs.clean_version }}
           registry: ${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}
           platforms: linux/amd64,linux/arm64
           push: true
           prebuild: ${{ matrix.prebuild }}
 
   deploy-to-distribution-environment:
-    needs: [check_version]
+    needs: [resolve_version]
     if: ${{ inputs.deploy_to_distribution_environment }}
     # This is the specific runner which is needed to authenticate to Platform
     # McKinsey for the Ark deployment.
@@ -168,7 +129,7 @@ jobs:
     steps:
       - name: Validate version tag exists
         run: |
-          if [ "${{ needs.check_version.outputs.has_version }}" != "true" ]; then
+          if [ "${{ needs.resolve_version.outputs.has_version }}" != "true" ]; then
             echo "Error: Version tag is required for distribution environment deployment but does not exist"
             exit 1
           fi
@@ -182,8 +143,8 @@ jobs:
           
       - name: Download ARK Helm chart from release
         run: |
-          VERSION="${{ needs.check_version.outputs.version }}"
-          CLEAN_VERSION="${{ needs.check_version.outputs.clean_version }}"
+          VERSION="${{ needs.resolve_version.outputs.version }}"
+          CLEAN_VERSION="${{ needs.resolve_version.outputs.clean_version }}"
           echo "Downloading ARK Helm chart for version: $VERSION"
           
           # Download the specific chart version
@@ -227,10 +188,10 @@ jobs:
       - name: Deploy ARK chart to Distribution Environment
         run: |
           # Deploy using helm with registry configuration
-          helm upgrade --install ark-controller ./ark-${{ needs.check_version.outputs.clean_version }}.tgz \
+          helm upgrade --install ark-controller ./ark-${{ needs.resolve_version.outputs.clean_version }}.tgz \
             --namespace ark-system \
             --set controllerManager.container.image.repository=${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}/ark-controller \
-            --set controllerManager.container.image.tag=${{ needs.check_version.outputs.clean_version }} \
+            --set controllerManager.container.image.tag=${{ needs.resolve_version.outputs.clean_version }} \
             --set controllerManager.serviceAccountName=ark-controller \
             --set containerRegistry.enabled=true \
             --set containerRegistry.server=${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }} \
@@ -242,22 +203,22 @@ jobs:
           # Wait for deployment readiness
           ./scripts/deploy/wait-for-deployment.sh ark-controller ark-system 600
             
-          echo "ARK ${{ needs.check_version.outputs.version }} deployed successfully to Distribution Environment"
+          echo "ARK ${{ needs.resolve_version.outputs.version }} deployed successfully to Distribution Environment"
           
       - name: Verify deployment
         run: |
-          echo "ARK ${{ needs.check_version.outputs.version }} deployed successfully"
+          echo "ARK ${{ needs.resolve_version.outputs.version }} deployed successfully"
           kubectl get pods -n ark-system
           kubectl get deployments -n ark-system
 
   deploy-helm-chart:
-    needs: [check_version]
+    needs: [resolve_version]
     if: ${{ inputs.deploy_helm_chart }}
     runs-on: ubuntu-24.04
     steps:
       - name: Validate version tag exists
         run: |
-          if [ "${{ needs.check_version.outputs.has_version }}" != "true" ]; then
+          if [ "${{ needs.resolve_version.outputs.has_version }}" != "true" ]; then
             echo "Error: Version tag is required for Helm chart deployment but does not exist"
             exit 1
           fi
@@ -271,8 +232,8 @@ jobs:
           
       - name: Download ARK Helm chart from release
         run: |
-          VERSION="${{ needs.check_version.outputs.version }}"
-          CLEAN_VERSION="${{ needs.check_version.outputs.clean_version }}"
+          VERSION="${{ needs.resolve_version.outputs.version }}"
+          CLEAN_VERSION="${{ needs.resolve_version.outputs.clean_version }}"
           echo "Downloading ARK Helm chart for version: $VERSION"
           
           gh release download "$VERSION" --pattern "ark-${CLEAN_VERSION}.tgz"
@@ -284,14 +245,14 @@ jobs:
 
       - name: Deploy Helm Chart to Container Registry
         run: |
-          CLEAN_VERSION="${{ needs.check_version.outputs.clean_version }}"
+          CLEAN_VERSION="${{ needs.resolve_version.outputs.clean_version }}"
           REGISTRY="${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}"
           
           helm registry login $REGISTRY -u "${{ secrets.DOCKER_REGISTRY_USERNAME || github.actor }}" --password-stdin <<< "${{ secrets.DOCKER_REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}"
           helm push ark-${CLEAN_VERSION}.tgz oci://${REGISTRY}/charts
 
   deploy-to-pages:
-    needs: [check_version]
+    needs: [resolve_version]
     if: ${{ inputs.deploy_to_pages }}
     runs-on: ubuntu-24.04
     environment:
@@ -324,7 +285,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
   deploy-to-npm:
-    needs: [check_version]
+    needs: [resolve_version]
     if: ${{ inputs.deploy_to_npm }}
     runs-on: ubuntu-24.04
     steps:
@@ -332,7 +293,7 @@ jobs:
       
       - name: Download ark-cli artifact from release
         run: |
-          VERSION="${{ needs.check_version.outputs.version }}"
+          VERSION="${{ needs.resolve_version.outputs.version }}"
           gh release download "$VERSION" -p "ark-cli.tgz"
         env:
           GH_TOKEN: ${{ github.token }}
@@ -350,7 +311,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   deploy-to-pypi:
-    needs: [check_version]
+    needs: [resolve_version]
     if: ${{ inputs.deploy_to_pypi }}
     runs-on: ubuntu-24.04
     steps:
@@ -358,7 +319,7 @@ jobs:
       
       - name: Download ARK SDK wheel from release
         run: |
-          VERSION="${{ needs.check_version.outputs.version }}"
+          VERSION="${{ needs.resolve_version.outputs.version }}"
           gh release download "$VERSION" -p "ark_sdk-*.whl" -D dist/
         env:
           GH_TOKEN: ${{ github.token }}
