@@ -153,7 +153,7 @@ jobs:
       
       - name: Install Custom resource definitions
         run: |
-          kubectl apply -f ark/config/crds/bases
+          kubectl apply -f ark/config/crd/bases
 
       - name: Deploy ARK chart to Environment
         run: |
