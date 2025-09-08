@@ -151,6 +151,7 @@ jobs:
           kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
       - name: Apply default namespace RBAC separately (not included in Helm chart)
         run: |
+          kubectl apply -f ark/config/rbac/service_account.yaml
           kubectl apply -f ark/config/rbac/ark_controller_role.yaml
           kubectl apply -f ark/config/rbac/ark_controller_role_binding.yaml
 
