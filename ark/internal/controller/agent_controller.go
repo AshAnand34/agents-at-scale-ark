@@ -11,7 +11,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	arkv1alpha1 "mckinsey.com/ark/api/v1alpha1"
 )
@@ -69,8 +71,9 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	// Requeue if still pending to check for dependency resolution
+	// Note: We also watch for Tool/Model events, so this is just a fallback
 	if newPhase == arkv1alpha1.AgentPhasePending {
-		return ctrl.Result{RequeueAfter: time.Minute}, nil
+		return ctrl.Result{RequeueAfter: 5 * time.Minute}, nil // Reduced frequency since we have event-driven updates
 	}
 
 	return ctrl.Result{}, nil
@@ -137,6 +140,97 @@ func (r *AgentReconciler) checkToolDependencies(ctx context.Context, agent *arkv
 func (r *AgentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&arkv1alpha1.Agent{}).
+		// Watch for Tool events and reconcile dependent agents
+		Watches(
+			&arkv1alpha1.Tool{},
+			handler.EnqueueRequestsFromMapFunc(r.findAgentsForTool),
+		).
+		// Watch for Model events and reconcile dependent agents
+		Watches(
+			&arkv1alpha1.Model{},
+			handler.EnqueueRequestsFromMapFunc(r.findAgentsForModel),
+		).
 		Named("agent").
 		Complete(r)
+}
+
+// findAgentsForTool finds agents that depend on the given tool
+func (r *AgentReconciler) findAgentsForTool(ctx context.Context, obj client.Object) []reconcile.Request {
+	tool, ok := obj.(*arkv1alpha1.Tool)
+	if !ok {
+		return nil
+	}
+
+	log := logf.Log.WithName("agent-controller").WithValues("tool", tool.Name, "namespace", tool.Namespace)
+	
+	// List all agents in the same namespace
+	var agentList arkv1alpha1.AgentList
+	if err := r.List(ctx, &agentList, client.InNamespace(tool.Namespace)); err != nil {
+		log.Error(err, "Failed to list agents for tool dependency check")
+		return nil
+	}
+
+	var requests []reconcile.Request
+	for _, agent := range agentList.Items {
+		// Check if this agent depends on the tool
+		if r.agentDependsOnTool(&agent, tool.Name) {
+			requests = append(requests, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      agent.Name,
+					Namespace: agent.Namespace,
+				},
+			})
+			log.Info("Triggering reconciliation for agent dependent on tool", "agent", agent.Name)
+		}
+	}
+
+	return requests
+}
+
+// findAgentsForModel finds agents that depend on the given model
+func (r *AgentReconciler) findAgentsForModel(ctx context.Context, obj client.Object) []reconcile.Request {
+	model, ok := obj.(*arkv1alpha1.Model)
+	if !ok {
+		return nil
+	}
+
+	log := logf.Log.WithName("agent-controller").WithValues("model", model.Name, "namespace", model.Namespace)
+	
+	// List all agents in the same namespace
+	var agentList arkv1alpha1.AgentList
+	if err := r.List(ctx, &agentList, client.InNamespace(model.Namespace)); err != nil {
+		log.Error(err, "Failed to list agents for model dependency check")
+		return nil
+	}
+
+	var requests []reconcile.Request
+	for _, agent := range agentList.Items {
+		// Check if this agent depends on the model
+		if r.agentDependsOnModel(&agent, model.Name) {
+			requests = append(requests, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      agent.Name,
+					Namespace: agent.Namespace,
+				},
+			})
+			log.Info("Triggering reconciliation for agent dependent on model", "agent", agent.Name)
+		}
+	}
+
+	return requests
+}
+
+// agentDependsOnTool checks if an agent depends on a specific tool
+func (r *AgentReconciler) agentDependsOnTool(agent *arkv1alpha1.Agent, toolName string) bool {
+	for _, toolSpec := range agent.Spec.Tools {
+		if toolSpec.Type == "custom" && toolSpec.Name == toolName {
+			return true
+		}
+	}
+	return false
+}
+
+// agentDependsOnModel checks if an agent depends on a specific model
+func (r *AgentReconciler) agentDependsOnModel(agent *arkv1alpha1.Agent, modelName string) bool {
+	return agent.Spec.ModelRef != nil && agent.Spec.ModelRef.Name == modelName
 }
