@@ -65,6 +65,7 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		agent.Status.Phase = newPhase
 		if err := r.Status().Update(ctx, &agent); err != nil {
 			log.Error(err, "Failed to update Agent status")
+			// Return error to trigger retry - controller-runtime will handle the retry with backoff
 			return ctrl.Result{}, err
 		}
 		log.Info("Updated agent status", "phase", newPhase)
@@ -171,9 +172,19 @@ func (r *AgentReconciler) findAgentsForTool(ctx context.Context, obj client.Obje
 	}
 
 	var requests []reconcile.Request
+	seenAgents := make(map[string]bool) // Deduplication map
+	
 	for _, agent := range agentList.Items {
 		// Check if this agent depends on the tool
 		if r.agentDependsOnTool(&agent, tool.Name) {
+			agentKey := agent.Namespace + "/" + agent.Name
+			
+			// Skip if we've already added this agent
+			if seenAgents[agentKey] {
+				continue
+			}
+			seenAgents[agentKey] = true
+			
 			requests = append(requests, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      agent.Name,
@@ -204,9 +215,19 @@ func (r *AgentReconciler) findAgentsForModel(ctx context.Context, obj client.Obj
 	}
 
 	var requests []reconcile.Request
+	seenAgents := make(map[string]bool) // Deduplication map
+	
 	for _, agent := range agentList.Items {
 		// Check if this agent depends on the model
 		if r.agentDependsOnModel(&agent, model.Name) {
+			agentKey := agent.Namespace + "/" + agent.Name
+			
+			// Skip if we've already added this agent
+			if seenAgents[agentKey] {
+				continue
+			}
+			seenAgents[agentKey] = true
+			
 			requests = append(requests, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      agent.Name,
