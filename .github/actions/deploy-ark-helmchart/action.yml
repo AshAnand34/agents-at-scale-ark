@@ -153,6 +153,7 @@ runs:
           --namespace "${{ inputs.namespace }}" \
           --create-namespace \
           # --set controllerManager.serviceAccountName="${{ inputs.service_account_name }}" \
+          # --set serviceAccount.name=ark-controller \
           --set rbac.enable=${{ inputs.rbac_enable }} \
           --timeout="${{ inputs.timeout }}" \
           $( [ -n "${IMAGE_REPO}" ] && echo "--set controllerManager.container.image.repository=${IMAGE_REPO}" ) \
