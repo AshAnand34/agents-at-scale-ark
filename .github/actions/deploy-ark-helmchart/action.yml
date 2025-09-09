@@ -59,6 +59,7 @@ runs:
   using: "composite"
   steps:
     - name: Grant kubectl access
+      shell: bash
       run: |
         kubectl apply -f ark/config/rbac/ark-deployer-role.yaml
         ./scripts/deploy/bind-deployer-role.sh "${{ github.repository }}" 
