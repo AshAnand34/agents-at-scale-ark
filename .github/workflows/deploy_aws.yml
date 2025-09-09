@@ -24,6 +24,8 @@ jobs:
       sha: ${{ steps.resolve.outputs.sha }}
       has_version: ${{ steps.resolve.outputs.has_version }}
     steps:
+      - uses: actions/checkout@v4
+      
       - name: Resolve ARK version
         id: resolve
         uses: ./.github/actions/resolve-version
@@ -82,4 +84,3 @@ jobs:
           apply_crds: "true"
         env:
           GH_TOKEN: ${{ github.token }}
-          
