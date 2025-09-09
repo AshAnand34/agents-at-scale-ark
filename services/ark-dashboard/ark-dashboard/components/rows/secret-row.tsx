@@ -1,6 +1,3 @@
-import { Pencil, Trash2, Lock } from "lucide-react";
-import { getCustomIcon } from "@/lib/utils/icon-resolver";
-import { ARK_ANNOTATIONS } from "@/lib/constants/annotations";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -8,9 +5,12 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
-import type { Secret } from "@/lib/services/secrets";
+import { ARK_ANNOTATIONS } from "@/lib/constants/annotations";
 import type { Model } from "@/lib/services/models";
+import type { Secret } from "@/lib/services/secrets";
+import { cn } from "@/lib/utils";
+import { getCustomIcon } from "@/lib/utils/icon-resolver";
+import { Lock, Pencil, Trash2 } from "lucide-react";
 
 interface SecretRowProps {
   secret: Secret;
@@ -59,12 +59,15 @@ export function SecretRow({
   const isInUse = usageCount > 0;
 
   // Get custom icon or default Lock icon
-  const IconComponent = getCustomIcon(secret.annotations?.[ARK_ANNOTATIONS.DASHBOARD_ICON], Lock);
+  const IconComponent = getCustomIcon(
+    secret.annotations?.[ARK_ANNOTATIONS.DASHBOARD_ICON],
+    Lock
+  );
 
   const obfuscatedSecret = "••••••••••••";
 
   return (
-    <div className="flex items-center py-3 px-4 bg-card border rounded-md shadow-sm hover:bg-accent/5 transition-colors xl:w-[49%] w-full gap-4">
+    <div className="flex items-center py-3 px-4 bg-card border rounded-md hover:bg-accent/5 transition-colors xl:w-[49%] w-full gap-4">
       <div className="flex items-center gap-3 flex-grow overflow-hidden">
         <IconComponent className="h-5 w-5 text-muted-foreground flex-shrink-0" />
 

@@ -104,17 +104,6 @@ export function EvaluationStatusIndicator({
     initialLoad()
   }, [loadSummary])
 
-  // Auto-refresh when evaluations are pending
-  useEffect(() => {
-    if (!summary || summary.status !== 'pending') return
-
-    const intervalId = setInterval(() => {
-      loadSummary()
-    }, 5000) // Poll every 5 seconds when evaluations are pending
-
-    return () => clearInterval(intervalId)
-  }, [summary, loadSummary])
-
   const handleViewEvaluations = (e: React.MouseEvent) => {
     e.stopPropagation()
     // Navigate to evaluations page with query filter
