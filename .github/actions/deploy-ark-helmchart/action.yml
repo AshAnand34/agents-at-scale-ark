@@ -128,7 +128,7 @@ runs:
       run: |
         kubectl apply -f ark/config/crd/bases
 
-        log_info "Waiting for CRDs to be established..."
+        echo "Waiting for CRDs to be established..."
         kubectl wait --for=condition=established --timeout=60s crd/agents.ark.mckinsey.com
         kubectl wait --for=condition=established --timeout=60s crd/models.ark.mckinsey.com
         kubectl wait --for=condition=established --timeout=60s crd/tools.ark.mckinsey.com
