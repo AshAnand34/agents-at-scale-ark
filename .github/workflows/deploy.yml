@@ -55,7 +55,7 @@ jobs:
       has_version: ${{ steps.resolve.outputs.has_version }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Resolve ARK version
         id: resolve
         uses: ./.github/actions/resolve-version
@@ -186,6 +186,7 @@ jobs:
           install_cert_manager: "false"
           install_gateway_api: "false"
           apply_crds: "false"
+          install_ingress: "false"
         env:
           GH_TOKEN: ${{ github.token }}
 
