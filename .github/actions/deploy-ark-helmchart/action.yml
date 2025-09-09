@@ -66,6 +66,7 @@ runs:
 
     - name: Download ARK Helm chart from release
       shell: bash
+      id: download_chart
       run: |
         set -euo pipefail
         VERSION="${{ inputs.version }}"
@@ -78,6 +79,7 @@ runs:
         echo "Downloading chart to ${CHART_NAME} for version: $VERSION"
         gh release download "$VERSION" --pattern "$CHART_NAME" --repo "${{ github.repository }}"
         ls -la "./${CHART_NAME}"
+        echo "chart_name=${CHART_NAME}" >> $GITHUB_OUTPUT
       env:
           GH_TOKEN: ${{ github.token }}
 
@@ -143,13 +145,14 @@ runs:
     - name: Deploy ARK chart
       shell: bash
       run: |
-        CHART="./ark-${{ inputs.clean_version }}.tgz"
+        CHART="./${{ steps.download_chart.outputs.chart_name }}"
         IMAGE_REPO="${{ inputs.image_repository }}"
         IMAGE_TAG="${{ inputs.clean_version }}"
         set -euo pipefail
         helm upgrade --install ark-controller "${CHART}" \
           --namespace "${{ inputs.namespace }}" \
-          --set controllerManager.serviceAccountName="${{ inputs.service_account_name }}" \
+          --create-namespace \
+          # --set controllerManager.serviceAccountName="${{ inputs.service_account_name }}" \
           --set rbac.enable=${{ inputs.rbac_enable }} \
           --timeout="${{ inputs.timeout }}" \
           $( [ -n "${IMAGE_REPO}" ] && echo "--set controllerManager.container.image.repository=${IMAGE_REPO}" ) \
