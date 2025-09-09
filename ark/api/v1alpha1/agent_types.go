@@ -81,7 +81,8 @@ const (
 
 type AgentStatus struct {
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default:="Pending"
+	// +kubebuilder:default="Pending"
+	// +kubebuilder:validation:Enum=Pending;Running;Succeeded;Failed;Unknown
 	// The phase of an Agent is a simple, high-level summary of where the Agent is in its lifecycle.
 	Phase AgentPhase `json:"phase"`
 }
