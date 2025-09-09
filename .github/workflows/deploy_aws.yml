@@ -64,85 +64,22 @@ jobs:
         run: |
           aws eks update-kubeconfig --name ${{ vars.AWS_EKS_CLUSTER_NAME }} --region ${{ vars.AWS_REGION }} 
       
-      - name: Grant kubectl access
-        run: |
-          # ./scripts/deploy/bind-deployer-role.sh "${{ github.repository }}" 
-
-      - name: Download ARK Helm chart from release
-        run: |
-          VERSION="${{ needs.resolve_version.outputs.version }}"
-          CLEAN_VERSION="${{ needs.resolve_version.outputs.clean_version }}"
-          echo "Downloading ARK Helm chart for version: $VERSION"
-          
-          # Download the specific chart version
-          gh release download "$VERSION" --pattern "ark-${CLEAN_VERSION}.tgz" --repo mckinsey/agents-at-scale-ark
-          
-          echo "Downloaded chart:"
-          ls -la ark-${CLEAN_VERSION}.tgz
+      - name: Deploy ARK Helm Chart (reusable)
+        uses: ./.github/actions/deploy-ark-helmchart
+        with:
+          version: ${{ needs.resolve_version.outputs.version }}
+          clean_version: ${{ needs.resolve_version.outputs.clean_version }}
+          namespace: ark-system
+          image_repository: ${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}/ark-controller
+          service_account_name: ark-controller
+          container_registry_server: ${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}
+          container_registry_username: ${{ secrets.DOCKER_REGISTRY_USERNAME || github.actor }}
+          container_registry_password: ${{ secrets.DOCKER_REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
+          rbac_enable: "true"
+          timeout: "5m"
+          install_cert_manager: "true"
+          install_gateway_api: "true"
+          apply_crds: "true"
         env:
           GH_TOKEN: ${{ github.token }}
-
-      - name: Check Currently Deployed ARK Status
-        run: |
-          helm status ark-controller -n ark-system || echo "No existing ARK release found - this is expected for fresh deployments"
-
-      - name: Create namespace with Pod Security Standards
-        run: |
-          # Create namespace with Pod Security Standards labels to satisfy admission controllers
-          kubectl create namespace ark-system --dry-run=client -o yaml | \
-          kubectl patch -f - --local --type=merge -p='{
-            "metadata": {
-              "labels": {
-                "pod-security.kubernetes.io/enforce": "baseline",
-                "pod-security.kubernetes.io/audit": "baseline", 
-                "pod-security.kubernetes.io/warn": "baseline"
-              }
-            }
-          }' --dry-run=client -o yaml | kubectl apply -f -
-
-      - name: Install cert-manager
-        run: |
-          helm repo add jetstack https://charts.jetstack.io --force-update  
-          helm repo update
-          helm upgrade --install cert-manager jetstack/cert-manager \
-            --namespace cert-manager \
-            --create-namespace \
-            --set crds.enabled=true
- 
-      - name: Install Gateway API CRDs
-        run: |
-          kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
-      
-      - name: Install Custom resource definitions
-        run: |
-          kubectl apply -f ark/config/crd/bases
-
-      - name: Deploy ARK chart to Environment
-        run: |
-          # Deploy using helm with registry configuration
-          helm upgrade --install ark-controller ./ark-${{ needs.resolve_version.outputs.clean_version }}.tgz \
-            --namespace ark-system \
-            --set controllerManager.container.image.repository=${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}/ark-controller \
-            --set controllerManager.container.image.tag=${{ needs.check_version.outputs.clean_version }} \
-            --set controllerManager.serviceAccountName=ark-controller \
-            --set containerRegistry.enabled=true \
-            --set containerRegistry.server=${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }} \
-            --set containerRegistry.username=${{ secrets.DOCKER_REGISTRY_USERNAME || github.actor }} \
-            --set containerRegistry.password=${{ secrets.DOCKER_REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }} \
-            --set rbac.enable=true \
-            --timeout=5m
-            
-          # Apply additional RBAC
-          kubectl apply -f ark/config/rbac/ark_tenant_role.yaml
-          kubectl apply -f ark/config/rbac/ark_tenant_role_binding.yaml
           
-          # Wait for deployment readiness
-          ./scripts/deploy/wait-for-deployment.sh ark-controller ark-system 600
-            
-          echo "ARK ${{ needs.resolve_version.outputs.version }} deployed successfully to Distribution Environment"
-          
-      - name: Verify deployment
-        run: |
-          echo "ARK ${{ needs.resolve_version.outputs.version }} deployed successfully"
-          kubectl get pods -n ark-system
-          kubectl get deployments -n ark-system
