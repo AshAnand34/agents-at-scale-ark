@@ -21,6 +21,7 @@ import {
   TooltipTrigger
 } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
+import { formatAge } from "../../lib/utils/time"
 
 interface EvaluationsSectionProps {
   namespace: string
@@ -597,6 +598,11 @@ export const EvaluationsSection = forwardRef<{ openAddEditor: () => void }, Eval
                     )}
                   </div>
                 </th>
+                <th className="px-3 py-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => handleSort('name')}>
+                  <div className="flex items-center">
+                    Age
+                  </div>
+                </th>
                 <th className="px-3 py-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100">
                   Evaluator
                 </th>
@@ -655,6 +661,9 @@ export const EvaluationsSection = forwardRef<{ openAddEditor: () => void }, Eval
                     >
                       <td className="px-3 py-3 text-sm text-gray-900 dark:text-gray-100 font-mono">
                         {evaluation.name}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">
+                        {formatAge((evaluation as EvaluationDetailResponse)?.metadata?.creationTimestamp as string | undefined)}
                       </td>
                       <td className="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">
                         {getEvaluatorDisplay(evaluation)}

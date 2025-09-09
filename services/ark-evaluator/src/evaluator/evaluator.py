@@ -7,7 +7,6 @@ from .agent_resolver import AgentResolver, AgentContext
 
 logger = logging.getLogger(__name__)
 
-
 class LLMEvaluator:
     def __init__(self, session=None):
         self.llm_client = LLMClient(session=session)

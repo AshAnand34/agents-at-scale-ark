@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, forwardRef, useImperativeHandle, useCallback } from "react";
+import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { queriesService } from "@/lib/services/queries";
-import { useDelayedLoading } from "@/lib/hooks/use-delayed-loading";
 import type { components } from "@/lib/api/generated/types";
 import { Trash2, ChevronUp, ChevronDown, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -16,6 +15,7 @@ import {
   TooltipTrigger
 } from "@/components/ui/tooltip";
 import { getResourceEventsUrl } from "@/lib/utils/events";
+import { useListQueries } from "../../lib/services/queries-hooks";
 
 type QueryResponse = components["schemas"]["QueryResponse"];
 interface QueriesSectionProps {
@@ -27,10 +27,8 @@ type SortDirection = 'asc' | 'desc';
 
 export const QueriesSection = forwardRef<{ openAddEditor: () => void }, QueriesSectionProps>(function QueriesSection({ namespace }, ref) {
   const [queries, setQueries] = useState<QueryResponse[]>([]);
-  const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const showLoading = useDelayedLoading(loading);
   const router = useRouter();
 
   useImperativeHandle(ref, () => ({
@@ -39,48 +37,35 @@ export const QueriesSection = forwardRef<{ openAddEditor: () => void }, QueriesS
     }
   }));
 
-  const loadQueries = useCallback(async () => {
-    try {
-      const data = await queriesService.list(namespace);
-      setQueries(data.items);
-    } catch (error) {
-      console.error("Failed to load queries:", error);
+  const getStatus = (query: QueryResponse) => {
+    return (query.status as { phase?: string })?.phase || "pending";
+  };
+
+  const {
+    data: listQueriesData,
+    isLoading: listQueriesLoading,
+    isError: listQueriesError,
+    error: listQueriesErrorObject,
+    refetch: loadQueries
+  } = useListQueries({ namespace, getStatus })
+
+  useEffect(() => {
+    if (listQueriesData && !listQueriesError) {
+      setQueries(listQueriesData.items);
+    }
+
+    if (listQueriesError) {
       toast({
         variant: "destructive",
         title: "Failed to Load Queries",
         description:
-          error instanceof Error
-            ? error.message
+        listQueriesErrorObject instanceof Error
+            ? listQueriesErrorObject.message
             : "An unexpected error occurred"
       });
     }
-  }, [namespace]);
 
-  useEffect(() => {
-    const initialLoad = async () => {
-      setLoading(true);
-      await loadQueries();
-      setLoading(false);
-    };
-
-    initialLoad();
-  }, [loadQueries]);
-
-  // Auto-refresh for running queries
-  useEffect(() => {
-    const hasRunningQueries = queries.some(query => {
-      const status = getStatus(query);
-      return status === "running" || status === "evaluating";
-    });
-
-    if (!hasRunningQueries) return;
-
-    const intervalId = setInterval(() => {
-      loadQueries();
-    }, 5000); // Poll every 5 seconds when there are running queries
-
-    return () => clearInterval(intervalId);
-  }, [queries, loadQueries]);
+  }, [listQueriesError, listQueriesData, listQueriesErrorObject])
 
   const truncateText = (text: string | undefined, maxLength: number = 50) => {
     if (!text) return "-";
@@ -136,10 +121,6 @@ export const QueriesSection = forwardRef<{ openAddEditor: () => void }, QueriesS
       | undefined;
     if (!responses || responses.length === 0) return undefined;
     return responses[0].content;
-  };
-
-  const getStatus = (query: QueryResponse) => {
-    return (query.status as { phase?: string })?.phase || "pending";
   };
 
   const getStatusBadge = (status: string | undefined, queryName: string) => {
@@ -217,7 +198,7 @@ export const QueriesSection = forwardRef<{ openAddEditor: () => void }, QueriesS
     }
   };
 
-  if (showLoading) {
+  if (listQueriesLoading) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
@@ -233,6 +214,11 @@ export const QueriesSection = forwardRef<{ openAddEditor: () => void }, QueriesS
             <table className="w-full min-w-[800px]">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
+                <th className="px-3 py-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => handleSort('createdAt')}>
+                  <div className="flex items-center">
+                    Name
+                  </div>
+                </th>
                 <th className="px-3 py-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => handleSort('createdAt')}>
                   <div className="flex items-center">
                     Age
@@ -284,6 +270,9 @@ export const QueriesSection = forwardRef<{ openAddEditor: () => void }, QueriesS
                       className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/30 cursor-pointer"
                       onClick={() => router.push(`/query/${query.name}?namespace=${namespace}`)}
                     >
+                      <td className="px-3 py-3 text-sm text-gray-900 dark:text-gray-100 font-mono">
+                        {query.name}
+                      </td>
                       <td className="px-3 py-3 text-sm text-gray-900 dark:text-gray-100">
                         {formatAge(query.creationTimestamp)}
                       </td>

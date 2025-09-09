@@ -46,7 +46,7 @@ $(DASHBOARD_OPENAPI): $(OUT)/ark-api/stamp-test | $(OUT)
 $(ARK_DASHBOARD_SERVICE_NAME)-deps: $(ARK_DASHBOARD_STAMP_DEPS) # HELP: Install ARK Dashboard dependencies
 $(ARK_DASHBOARD_STAMP_DEPS): $(ARK_DASHBOARD_SERVICE_SOURCE_DIR)/package.json $(DASHBOARD_OPENAPI) | $(OUT)
 	@mkdir -p $(dir $@)
-	cd $(ARK_DASHBOARD_SERVICE_SOURCE_DIR) && npm install && npm run generate:api
+	cd $(ARK_DASHBOARD_SERVICE_SOURCE_DIR) && npm ci && npm run generate:api
 	@touch $@
 
 # Test target

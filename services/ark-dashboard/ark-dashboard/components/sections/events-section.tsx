@@ -268,7 +268,7 @@ export function EventsSection({
 
   return (
     <div className="space-y-4 p-4">
-      <div className="flex flex-wrap gap-4 items-center">
+      <div className="flex flex-wrap gap-2 items-center">
         <Select
           value={filters.type || "all"}
           onValueChange={(value) => handleFilterChange("type", value)}
@@ -352,7 +352,7 @@ export function EventsSection({
       </div>
 
       {/* Events Table */}
-      <div className="border rounded-lg">
+      <div className="rounded-lg border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1200px]">
             <thead className="bg-gray-50 dark:bg-gray-900/50">
