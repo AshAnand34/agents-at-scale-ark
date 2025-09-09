@@ -54,6 +54,8 @@ jobs:
       sha: ${{ steps.resolve.outputs.sha }}
       has_version: ${{ steps.resolve.outputs.has_version }}
     steps:
+      - uses: actions/checkout@v4
+      
       - name: Resolve ARK version
         id: resolve
         uses: ./.github/actions/resolve-version
@@ -167,49 +169,25 @@ jobs:
           idp_issuer_url: ${{ secrets.DEPLOY_CLUSTER_IDP_ISSUER_URL }}
           kubectl_version: v1.28.0
 
-      - name: Check Currently Deployed ARK Status
-        run: |
-          helm status ark-controller -n ark-system || echo "No existing ARK release found - this is expected for fresh deployments"
-
-      - name: Create namespace with Pod Security Standards
-        run: |
-          # Create namespace with Pod Security Standards labels to satisfy admission controllers
-          kubectl create namespace ark-system --dry-run=client -o yaml | \
-          kubectl patch -f - --local --type=merge -p='{
-            "metadata": {
-              "labels": {
-                "pod-security.kubernetes.io/enforce": "baseline",
-                "pod-security.kubernetes.io/audit": "baseline", 
-                "pod-security.kubernetes.io/warn": "baseline"
-              }
-            }
-          }' --dry-run=client -o yaml | kubectl apply -f -
-        
-      - name: Deploy ARK chart to Distribution Environment
-        run: |
-          # Deploy using helm with registry configuration
-          helm upgrade --install ark-controller ./ark-${{ needs.resolve_version.outputs.clean_version }}.tgz \
-            --namespace ark-system \
-            --set controllerManager.container.image.repository=${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}/ark-controller \
-            --set controllerManager.container.image.tag=${{ needs.resolve_version.outputs.clean_version }} \
-            --set controllerManager.serviceAccountName=ark-controller \
-            --set containerRegistry.enabled=true \
-            --set containerRegistry.server=${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }} \
-            --set containerRegistry.username=${{ secrets.DOCKER_REGISTRY_USERNAME || github.actor }} \
-            --set containerRegistry.password=${{ secrets.DOCKER_REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }} \
-            --set rbac.enable=false \
-            --timeout=5m
-            
-          # Wait for deployment readiness
-          ./scripts/deploy/wait-for-deployment.sh ark-controller ark-system 600
-            
-          echo "ARK ${{ needs.resolve_version.outputs.version }} deployed successfully to Distribution Environment"
-          
-      - name: Verify deployment
-        run: |
-          echo "ARK ${{ needs.resolve_version.outputs.version }} deployed successfully"
-          kubectl get pods -n ark-system
-          kubectl get deployments -n ark-system
+      - name: Deploy ARK Helm Chart
+        uses: ./.github/actions/deploy-ark-helmchart
+        with:
+          version: ${{ needs.resolve_version.outputs.version }}
+          clean_version: ${{ needs.resolve_version.outputs.clean_version }}
+          namespace: ark-system
+          image_repository: ${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}/ark-controller
+          image_tag: ${{ needs.resolve_version.outputs.clean_version }}
+          service_account_name: ark-controller
+          container_registry_server: ${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}
+          container_registry_username: ${{ secrets.DOCKER_REGISTRY_USERNAME || github.actor }}
+          container_registry_password: ${{ secrets.DOCKER_REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
+          rbac_enable: "false"
+          timeout: "5m"
+          install_cert_manager: "false"
+          install_gateway_api: "false"
+          apply_crds: "false"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   deploy-helm-chart:
     needs: [resolve_version]
