@@ -1,0 +1,83 @@
+name: "Deploy ARK Services"
+description: "Deploy ark-api, ark-api-a2a and ark-dashboard Helm charts, verify deployment and apply ingress. Caller must provide kube credentials and helm installed."
+inputs:
+  clean_version:
+    description: "Clean version used as image tag (e.g. 0.1.2)"
+    required: true
+  image_registry:
+    description: "Image registry prefix (e.g. ghcr.io/org/repo). Action will append /ark-api, /ark-api-a2a, /ark-dashboard"
+    required: false
+    default: ""
+  namespace:
+    description: "Kubernetes namespace to deploy services into"
+    required: false
+    default: "default"
+  pull_policy:
+    description: "Image pull policy"
+    required: false
+    default: "IfNotPresent"
+  timeout:
+    description: "Helm timeout for each release (e.g. 5m)"
+    required: false
+    default: "5m"
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Deploy services
+      shell: bash
+      run: |
+        set -euo pipefail
+        SERVICES=(
+          "ark-api"
+          "ark-api-a2a"
+          "ark-dashboard"
+        )
+
+        for NAME in "${SERVICES[@]}"; do
+
+          # compute image repository per service
+          IMAGE_REPO_INPUT="${{ inputs.image_registry }}"
+          if [ -n "${IMAGE_REPO_INPUT}" ]; then
+            IMAGE_REPO="${IMAGE_REPO_INPUT}/${NAME}"
+          else
+            IMAGE_REPO="${NAME}"
+          fi
+
+          echo "=== Deploying ${NAME} ==="
+          helm upgrade --install "${NAME}" "services/${NAME}/chart" \
+            --namespace "${{ inputs.namespace }}" \
+            --create-namespace \
+            --set app.image.repository="${IMAGE_REPO}" \
+            --set app.image.tag="${{ inputs.clean_version }}" \
+            --set app.image.pullPolicy="${{ inputs.pull_policy }}" \
+            --wait \
+            --timeout="${{ inputs.timeout }}"
+        done
+
+    - name: Verify deployment
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "=== Checking deployment status ==="
+        echo "ARK Controller:"
+        if ! kubectl get pods -n ark-system -l control-plane=ark-controller; then
+          echo "Controller not found, showing all ark-system pods:"
+          kubectl get pods -n ark-system || true
+        fi
+        echo "ARK Services:"
+        kubectl get pods -n "${{ inputs.namespace }}" -l app=ark-api || true
+        kubectl get pods -n "${{ inputs.namespace }}" -l app=ark-api-a2a || true
+        kubectl get pods -n "${{ inputs.namespace }}" -l app=ark-dashboard || true
+        echo "Service endpoints:"
+        kubectl get svc -n "${{ inputs.namespace }}" ark-api ark-api-a2a ark-dashboard || true
+
+    - name: Setup ARK ingress
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Create ingress resource for ARK services
+        kubectl apply -f ark/scripts/ark_ingress.yml || true
+        echo "Ingress controller deployed"
