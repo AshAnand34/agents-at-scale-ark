@@ -25,14 +25,7 @@ jobs:
       has_version: ${{ steps.resolve.outputs.has_version }}
     steps:
       - uses: actions/checkout@v4
-        with:
-            ref: ${{ github.ref }}
 
-      - name: Print GitHub actions
-        run: |
-          echo "REF: ${{ github.ref }}"
-          ls -alh ./.github/actions/
-      
       - name: Resolve ARK version
         id: resolve
         uses: ./.github/actions/resolve-version

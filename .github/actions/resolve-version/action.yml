@@ -71,3 +71,8 @@ runs:
         SHA=$(git rev-list -n 1 "$VERSION")
         echo "sha=$SHA" >> $GITHUB_OUTPUT
         echo "Using SHA $SHA for version $VERSION" >&2
+    
+    - name: REMOVE-ME: Set origin ref checkout for the first commit, so action can do the post-checkout
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.ref }}
