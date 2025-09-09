@@ -73,7 +73,6 @@ jobs:
           clean_version: ${{ needs.resolve_version.outputs.clean_version }}
           namespace: ark-system
           image_repository: ${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}/ark-controller
-          service_account_name: ark-controller
           container_registry_server: ${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}
           container_registry_username: ${{ secrets.DOCKER_REGISTRY_USERNAME || github.actor }}
           container_registry_password: ${{ secrets.DOCKER_REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
@@ -84,3 +83,58 @@ jobs:
           apply_crds: "true"
         env:
           GH_TOKEN: ${{ github.token }}
+
+      - name: Deploy ark-api
+        run: |
+          echo "=== Deploying ark-api ==="
+          helm upgrade --install ark-api services/ark-api/chart \
+            --namespace default \
+            --create-namespace \
+            --set app.image.repository="${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}/ark-api" \
+            --set app.image.tag="${{ needs.resolve_version.outputs.clean_version }}" \
+            --set app.image.pullPolicy="IfNotPresent" \
+            --wait \
+            --timeout=5m
+
+      - name: Deploy ark-api-a2a
+        run: |
+          echo "=== Deploying ark-api-a2a ==="
+          helm upgrade --install ark-api-a2a services/ark-api-a2a/chart \
+            --namespace default \
+            --create-namespace \
+            --set app.image.repository="${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}/ark-api-a2a" \
+            --set app.image.tag="${{ needs.resolve_version.outputs.clean_version }}" \
+            --set app.image.pullPolicy="IfNotPresent" \
+            --wait \
+            --timeout=5m
+
+      - name: Deploy ark-dashboard
+        run: |
+          echo "=== Deploying dashboard ==="
+          helm upgrade --install ark-dashboard services/ark-dashboard/chart \
+            --namespace default \
+            --create-namespace \
+            --set app.image.repository="${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}/ark-dashboard" \
+            --set app.image.tag="${{ needs.resolve_version.outputs.clean_version }}" \
+            --set app.image.pullPolicy="IfNotPresent" \
+            --wait \
+            --timeout=5m
+
+      - name: Verify deployment
+        run: |
+          echo "=== Checking deployment status ==="
+          echo "ARK Controller:"
+          kubectl get pods -n ark-system -l control-plane=ark-controller || echo "Controller not found, showing all ark-system pods:" && kubectl get pods -n ark-system
+          echo "ARK Services:"
+          kubectl get pods -n default -l app=ark-api
+          kubectl get pods -n default -l app=ark-api-a2a
+          kubectl get pods -n default -l app=ark-dashboard
+          echo "Service endpoints:"
+          kubectl get svc -n default ark-api ark-api-a2a ark-dashboard
+      
+      - name: Setup ARK ingress
+        run: |
+          # Create ingress resource for ARK services - find better place
+          kubectl apply -f ark/scripts/ark-ingress.yaml 
+        
+          echo "Ingress controller deployed"

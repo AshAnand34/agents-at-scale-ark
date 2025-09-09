@@ -19,10 +19,6 @@ inputs:
     description: "Controller image repository (will be passed to Helm)"
     required: false
     default: ""
-  service_account_name:
-    description: "ServiceAccount name to set on Helm release"
-    required: false
-    default: "ark-controller"
   container_registry_server:
     description: "Container registry server (for chart values)"
     required: false
@@ -181,6 +177,7 @@ runs:
         echo "Deployed ARK: ${{ inputs.version }}"
         kubectl get pods -n "${{ inputs.namespace }}" || true
         kubectl get deployments -n "${{ inputs.namespace }}"
+
     - name: Install ingresses
       if: ${{ inputs.install_ingress == 'true' }}
       shell: bash
@@ -203,11 +200,3 @@ runs:
             --for=condition=ready pod \
             --selector=app.kubernetes.io/component=controller \
             --timeout=300s
-    - name: Setup ARK ingress
-      if: ${{ inputs.install_ingress == 'true' }}
-      shell: bash
-      run: |
-        # Create ingress resource for ARK services
-        kubectl apply -f ark/config/ingress/ark-ingress.yaml 
-        
-        echo "Ingress controller deployed"
