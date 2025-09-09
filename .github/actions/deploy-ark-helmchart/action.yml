@@ -75,8 +75,8 @@ runs:
         else
           CHART_NAME="ark-${CLEAN}.tgz"
         fi
-        echo "Downloading chart from: $DOWNLOAD_URL"
-        gh release download "$VERSION" --pattern "ark-${CLEAN_VERSION}.tgz"
+        echo "Downloading chart to ${CHART_NAME} for version: $VERSION"
+        gh release download "$VERSION" --pattern "$CHART_NAME" --repo "${{ github.repository }}"
         ls -la "./${CHART_NAME}"
       env:
           GH_TOKEN: ${{ github.token }}
