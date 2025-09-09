@@ -135,6 +135,6 @@ jobs:
       - name: Setup ARK ingress
         run: |
           # Create ingress resource for ARK services - find better place
-          kubectl apply -f ark/scripts/ark-ingress.yaml 
+          kubectl apply -f ark/scripts/ark_ingress.yml 
         
           echo "Ingress controller deployed"
