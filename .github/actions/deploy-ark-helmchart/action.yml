@@ -168,7 +168,7 @@ runs:
     - name: Wait for deployment readiness
       shell: bash
       run: |
-        WAIT_SECONDS = 600
+        WAIT_SECONDS=600
         ./scripts/deploy/wait-for-deployment.sh ark-controller "${{ inputs.namespace }}" $WAIT_SECONDS
 
     - name: Verify deployment
