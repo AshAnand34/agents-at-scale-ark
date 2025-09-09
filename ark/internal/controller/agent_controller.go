@@ -102,7 +102,7 @@ func (r *AgentReconciler) checkModelDependency(ctx context.Context, agent *arkv1
 	if modelNamespace == "" {
 		modelNamespace = agent.Namespace
 	}
-	
+
 	var model arkv1alpha1.Model
 	modelKey := types.NamespacedName{Name: agent.Spec.ModelRef.Name, Namespace: modelNamespace}
 	if err := r.Get(ctx, modelKey, &model); err != nil {
@@ -162,40 +162,9 @@ func (r *AgentReconciler) findAgentsForTool(ctx context.Context, obj client.Obje
 		return nil
 	}
 
-	log := logf.Log.WithName("agent-controller").WithValues("tool", tool.Name, "namespace", tool.Namespace)
-	
-	// List all agents in the same namespace
-	var agentList arkv1alpha1.AgentList
-	if err := r.List(ctx, &agentList, client.InNamespace(tool.Namespace)); err != nil {
-		log.Error(err, "Failed to list agents for tool dependency check")
-		return nil
-	}
-
-	var requests []reconcile.Request
-	seenAgents := make(map[string]bool) // Deduplication map
-	
-	for _, agent := range agentList.Items {
-		// Check if this agent depends on the tool
-		if r.agentDependsOnTool(&agent, tool.Name) {
-			agentKey := agent.Namespace + "/" + agent.Name
-			
-			// Skip if we've already added this agent
-			if seenAgents[agentKey] {
-				continue
-			}
-			seenAgents[agentKey] = true
-			
-			requests = append(requests, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      agent.Name,
-					Namespace: agent.Namespace,
-				},
-			})
-			log.Info("Triggering reconciliation for agent dependent on tool", "agent", agent.Name)
-		}
-	}
-
-	return requests
+	return r.findAgentsForDependency(ctx, tool.Name, tool.Namespace, "tool", func(agent *arkv1alpha1.Agent) bool {
+		return r.agentDependsOnTool(agent, tool.Name)
+	})
 }
 
 // findAgentsForModel finds agents that depend on the given model
@@ -205,36 +174,43 @@ func (r *AgentReconciler) findAgentsForModel(ctx context.Context, obj client.Obj
 		return nil
 	}
 
-	log := logf.Log.WithName("agent-controller").WithValues("model", model.Name, "namespace", model.Namespace)
-	
+	return r.findAgentsForDependency(ctx, model.Name, model.Namespace, "model", func(agent *arkv1alpha1.Agent) bool {
+		return r.agentDependsOnModel(agent, model.Name)
+	})
+}
+
+// findAgentsForDependency is a generic function to find agents that depend on a given resource
+func (r *AgentReconciler) findAgentsForDependency(ctx context.Context, resourceName, namespace, resourceType string, dependencyCheck func(*arkv1alpha1.Agent) bool) []reconcile.Request {
+	log := logf.Log.WithName("agent-controller").WithValues(resourceType, resourceName, "namespace", namespace)
+
 	// List all agents in the same namespace
 	var agentList arkv1alpha1.AgentList
-	if err := r.List(ctx, &agentList, client.InNamespace(model.Namespace)); err != nil {
-		log.Error(err, "Failed to list agents for model dependency check")
+	if err := r.List(ctx, &agentList, client.InNamespace(namespace)); err != nil {
+		log.Error(err, "Failed to list agents for dependency check", "resourceType", resourceType)
 		return nil
 	}
 
 	var requests []reconcile.Request
 	seenAgents := make(map[string]bool) // Deduplication map
-	
+
 	for _, agent := range agentList.Items {
-		// Check if this agent depends on the model
-		if r.agentDependsOnModel(&agent, model.Name) {
+		// Check if this agent depends on the resource
+		if dependencyCheck(&agent) {
 			agentKey := agent.Namespace + "/" + agent.Name
-			
+
 			// Skip if we've already added this agent
 			if seenAgents[agentKey] {
 				continue
 			}
 			seenAgents[agentKey] = true
-			
+
 			requests = append(requests, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      agent.Name,
 					Namespace: agent.Namespace,
 				},
 			})
-			log.Info("Triggering reconciliation for agent dependent on model", "agent", agent.Name)
+			log.Info("Triggering reconciliation for agent dependent on resource", "agent", agent.Name, "resourceType", resourceType)
 		}
 	}
 
