@@ -101,7 +101,7 @@ jobs:
           for NAME in "${SERVICES[@]}"; do
 
             # compute image repository per service
-            IMAGE_REPO_INPUT="${{ inputs.image_registry }}"
+            IMAGE_REPO_INPUT="${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}"
             if [ -n "${IMAGE_REPO_INPUT}" ]; then
               IMAGE_REPO="${IMAGE_REPO_INPUT}/${NAME}"
             else
@@ -110,13 +110,13 @@ jobs:
 
             echo "=== Deploying ${NAME} ==="
             helm upgrade --install "${NAME}" "services/${NAME}/chart" \
-              --namespace "${{ inputs.namespace }}" \
+              --namespace "default" \
               --create-namespace \
               --set app.image.repository="${IMAGE_REPO}" \
-              --set app.image.tag="${{ inputs.clean_version }}" \
-              --set app.image.pullPolicy="${{ inputs.pull_policy }}" \
+              --set app.image.tag="${{ needs.resolve_version.outputs.clean_version }}" \
+              --set app.image.pullPolicy="IfNotPresent" \
               --wait \
-              --timeout="${{ inputs.timeout }}"
+              --timeout="5m"
           done
 
       - name: Verify deployment
@@ -130,11 +130,11 @@ jobs:
             kubectl get pods -n ark-system || true
           fi
           echo "ARK Services:"
-          kubectl get pods -n "${{ inputs.namespace }}" -l app=ark-api || true
-          kubectl get pods -n "${{ inputs.namespace }}" -l app=ark-api-a2a || true
-          kubectl get pods -n "${{ inputs.namespace }}" -l app=ark-dashboard || true
+          kubectl get pods -n "default" -l app=ark-api || true
+          kubectl get pods -n "default" -l app=ark-api-a2a || true
+          kubectl get pods -n "default" -l app=ark-dashboard || true
           echo "Service endpoints:"
-          kubectl get svc -n "${{ inputs.namespace }}" ark-api ark-api-a2a ark-dashboard || true
+          kubectl get svc -n "default" ark-api ark-api-a2a ark-dashboard || true
 
       - name: Setup ARK ingress
         shell: bash
@@ -143,4 +143,3 @@ jobs:
           # Create ingress resource for ARK services
           kubectl apply -f ark/scripts/ark_ingress.yml || true
           echo "Ingress controller deployed"
-          
