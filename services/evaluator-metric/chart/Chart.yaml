@@ -5,7 +5,7 @@ description: >-
   consumption, performance.
 type: application
 version: 0.1.33
-appVersion: 0.1.17
+appVersion: 0.1.33
 keywords:
   - evaluator
   - metric
