@@ -27,14 +27,9 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        SERVICES=(
-          "ark-api"
-          "ark-api-a2a"
-          "ark-dashboard"
-          "ark-mcp"
-        )
+        echo "SERVICES_LIST=ark-api ark-api-a2a ark-dashboard ark-mcp" >> $GITHUB_ENV
 
-        for NAME in "${SERVICES[@]}"; do
+        for NAME in $SERVICES_LIST; do
 
           # compute image repository per service
           IMAGE_REPO_INPUT="${{ inputs.image_registry }}"
@@ -66,12 +61,12 @@ runs:
           kubectl get pods -n ark-system || true
         fi
         echo "ARK Services:"
-        for NAME in "${SERVICES[@]}"; do
+        for NAME in $SERVICES_LIST; do
           echo "${NAME}:"
           kubectl get pods -n "${{ inputs.namespace }}" -l app="${NAME}" || true
         done
         echo "Service endpoints:"
-        kubectl get svc -n "${{ inputs.namespace }}" ${SERVICES} || true
+        kubectl get svc -n "${{ inputs.namespace }}" $SERVICES_LIST || true
 
     - name: Setup ARK ingress
       shell: bash
