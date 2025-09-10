@@ -116,7 +116,7 @@ jobs:
               --set app.image.tag="${{ needs.resolve_version.outputs.clean_version }}" \
               --set app.image.pullPolicy="IfNotPresent" \
               --wait \
-              --timeout="5m"
+              --timeout="10m"
           done
 
       - name: Verify deployment
@@ -143,3 +143,5 @@ jobs:
           # Create ingress resource for ARK services
           kubectl apply -f ark/scripts/ark_ingress.yml || true
           echo "Ingress controller deployed"
+
+
