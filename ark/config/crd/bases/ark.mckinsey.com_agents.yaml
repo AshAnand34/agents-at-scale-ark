@@ -196,9 +196,7 @@ spec:
                 enum:
                 - Pending
                 - Ready
-                - Succeeded
                 - Error
-                - Unknown
                 type: string
             type: object
         type: object

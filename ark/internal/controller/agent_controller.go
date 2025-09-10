@@ -110,7 +110,7 @@ func (r *AgentReconciler) checkModelDependency(ctx context.Context, agent *arkv1
 			log.Info("Model dependency not found", "model", agent.Spec.ModelRef.Name, "namespace", modelNamespace)
 			return arkv1alpha1.AgentPhasePending, nil
 		}
-		return arkv1alpha1.AgentPhaseUnknown, err
+		return arkv1alpha1.AgentPhaseError, err
 	}
 
 	return arkv1alpha1.AgentPhaseReady, nil
@@ -129,7 +129,7 @@ func (r *AgentReconciler) checkToolDependencies(ctx context.Context, agent *arkv
 					log.Info("Tool dependency not found", "tool", toolSpec.Name, "namespace", agent.Namespace)
 					return arkv1alpha1.AgentPhasePending, nil
 				}
-				return arkv1alpha1.AgentPhaseUnknown, err
+				return arkv1alpha1.AgentPhaseError, err
 			}
 		}
 	}

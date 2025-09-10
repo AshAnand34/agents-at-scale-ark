@@ -71,18 +71,14 @@ const (
 	AgentPhasePending AgentPhase = "Pending"
 	// AgentPhaseReady - all dependencies resolved, agent is ready
 	AgentPhaseReady AgentPhase = "Ready"
-	// AgentPhaseSucceeded - agent completed successfully
-	AgentPhaseSucceeded AgentPhase = "Succeeded"
 	// AgentPhaseError - agent terminated with errors
 	AgentPhaseError AgentPhase = "Error"
-	// AgentPhaseUnknown - state cannot be determined
-	AgentPhaseUnknown AgentPhase = "Unknown"
 )
 
 type AgentStatus struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="Pending"
-	// +kubebuilder:validation:Enum=Pending;Ready;Succeeded;Error;Unknown
+	// +kubebuilder:validation:Enum=Pending;Ready;Error
 	// The phase of an Agent is a simple, high-level summary of where the Agent is in its lifecycle.
 	Phase AgentPhase `json:"phase"`
 }
