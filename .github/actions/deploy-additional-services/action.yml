@@ -16,21 +16,23 @@ inputs:
     description: "Image pull policy"
     required: false
     default: "IfNotPresent"
+  services_list:
+    description: "Space-separated list of services to deploy (default: ark-api ark-api-a2a ark-dashboard)"
+    required: false
+    default: "ark-api ark-api-a2a ark-dashboard"
   timeout:
     description: "Helm timeout for each release (e.g. 5m)"
     required: false
     default: "5m"
 runs:
   using: "composite"
-  env:
-    SERVICES_LIST: "ark-api ark-api-a2a ark-dashboard"
   steps:
     - name: Deploy services
       shell: bash
       run: |
         set -euo pipefail
         echo "=== Deploying additional ARK services ==="
-        for NAME in $SERVICES_LIST; do
+        for NAME in ${{ inputs.services_list }}; do
 
           # compute image repository per service
           IMAGE_REPO_INPUT="${{ inputs.image_registry }}"
@@ -62,12 +64,12 @@ runs:
           kubectl get pods -n ark-system || true
         fi
         echo "ARK Services:"
-        for NAME in $SERVICES_LIST; do
+        for NAME in ${{ inputs.services_list }}; do
           echo "${NAME}:"
           kubectl get pods -n "${{ inputs.namespace }}" -l app="${NAME}" || true
         done
         echo "Service endpoints:"
-        kubectl get svc -n "${{ inputs.namespace }}" $SERVICES_LIST || true
+        kubectl get svc -n "${{ inputs.namespace }}" ${{ inputs.services_list }} || true
 
     - name: Setup ARK ingress
       shell: bash
