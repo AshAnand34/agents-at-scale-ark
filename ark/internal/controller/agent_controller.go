@@ -83,7 +83,7 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 // checkDependencies validates all agent dependencies and returns appropriate phase
 func (r *AgentReconciler) checkDependencies(ctx context.Context, agent *arkv1alpha1.Agent) (arkv1alpha1.AgentPhase, error) {
 	// Check model dependency
-	if phase, err := r.checkModelDependency(ctx, agent); err != nil || phase != arkv1alpha1.AgentPhaseRunning {
+	if phase, err := r.checkModelDependency(ctx, agent); err != nil || phase != arkv1alpha1.AgentPhaseReady {
 		return phase, err
 	}
 
@@ -94,7 +94,7 @@ func (r *AgentReconciler) checkDependencies(ctx context.Context, agent *arkv1alp
 // checkModelDependency validates model dependency
 func (r *AgentReconciler) checkModelDependency(ctx context.Context, agent *arkv1alpha1.Agent) (arkv1alpha1.AgentPhase, error) {
 	if agent.Spec.ModelRef == nil {
-		return arkv1alpha1.AgentPhaseRunning, nil
+		return arkv1alpha1.AgentPhaseReady, nil
 	}
 
 	log := logf.FromContext(ctx)
@@ -113,7 +113,7 @@ func (r *AgentReconciler) checkModelDependency(ctx context.Context, agent *arkv1
 		return arkv1alpha1.AgentPhaseUnknown, err
 	}
 
-	return arkv1alpha1.AgentPhaseRunning, nil
+	return arkv1alpha1.AgentPhaseReady, nil
 }
 
 // checkToolDependencies validates tool dependencies
@@ -135,7 +135,7 @@ func (r *AgentReconciler) checkToolDependencies(ctx context.Context, agent *arkv
 	}
 
 	// All dependencies resolved
-	return arkv1alpha1.AgentPhaseRunning, nil
+	return arkv1alpha1.AgentPhaseReady, nil
 }
 
 func (r *AgentReconciler) SetupWithManager(mgr ctrl.Manager) error {

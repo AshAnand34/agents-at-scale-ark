@@ -192,7 +192,7 @@ run_scenario_1() {
 }
 
 run_scenario_2() {
-    print_separator "SCENARIO 2: Add Missing Tool (should transition to Running)"
+    print_separator "SCENARIO 2: Add Missing Tool (should transition to Ready)"
 
     cleanup
     sleep 2
@@ -207,10 +207,10 @@ run_scenario_2() {
     create_test_tool
     
     # Wait for status change
-    if wait_for_status "Running" 15; then
-        print_success "✅ Agent correctly transitioned to Running when tool was created"
+    if wait_for_status "Ready" 15; then
+        print_success "✅ Agent correctly transitioned to Ready when tool was created"
     else
-        print_error "❌ Agent did not transition to Running status"
+        print_error "❌ Agent did not transition to Ready status"
     fi
     
     # Stop log monitoring

@@ -201,7 +201,7 @@ spec:
                   of where the Agent is in its lifecycle.
                 enum:
                 - Pending
-                - Running
+                - Ready
                 - Succeeded
                 - Failed
                 - Unknown
