@@ -762,7 +762,7 @@ class TestAgentsEndpoint(unittest.TestCase):
                 "description": "Old description",
                 "prompt": "Old prompt"
             },
-            "status": {"phase": "Running"}
+            "status": {"phase": "Ready"}
         }
         
         # Mock updated agent
@@ -774,7 +774,7 @@ class TestAgentsEndpoint(unittest.TestCase):
                 "prompt": "Updated prompt",
                 "modelRef": {"name": "gpt-4"}
             },
-            "status": {"phase": "Running"}
+            "status": {"phase": "Ready"}
         }
         
         mock_client.agents.a_get = AsyncMock(return_value=existing_agent)
@@ -812,7 +812,7 @@ class TestAgentsEndpoint(unittest.TestCase):
                 "prompt": "Original prompt",
                 "modelRef": {"name": "gpt-3.5-turbo"}
             },
-            "status": {"phase": "Running"}
+            "status": {"phase": "Ready"}
         }
         
         # Mock updated agent
@@ -824,7 +824,7 @@ class TestAgentsEndpoint(unittest.TestCase):
                 "prompt": "Original prompt",
                 "modelRef": {"name": "gpt-3.5-turbo"}
             },
-            "status": {"phase": "Running"}
+            "status": {"phase": "Ready"}
         }
         
         mock_client.agents.a_get = AsyncMock(return_value=existing_agent)
