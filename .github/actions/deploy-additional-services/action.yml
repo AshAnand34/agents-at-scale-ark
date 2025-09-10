@@ -23,9 +23,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
-
     - name: Deploy services
       shell: bash
       run: |
@@ -35,7 +32,6 @@ runs:
           "ark-api-a2a"
           "ark-dashboard"
           "ark-mcp"
-          "localhost-gateway"
         )
 
         for NAME in "${SERVICES[@]}"; do
@@ -70,11 +66,12 @@ runs:
           kubectl get pods -n ark-system || true
         fi
         echo "ARK Services:"
-        kubectl get pods -n "${{ inputs.namespace }}" -l app=ark-api || true
-        kubectl get pods -n "${{ inputs.namespace }}" -l app=ark-api-a2a || true
-        kubectl get pods -n "${{ inputs.namespace }}" -l app=ark-dashboard || true
+        for NAME in "${SERVICES[@]}"; do
+          echo "${NAME}:"
+          kubectl get pods -n "${{ inputs.namespace }}" -l app="${NAME}" || true
+        done
         echo "Service endpoints:"
-        kubectl get svc -n "${{ inputs.namespace }}" ark-api ark-api-a2a ark-dashboard || true
+        kubectl get svc -n "${{ inputs.namespace }}" ${SERVICES} || true
 
     - name: Setup ARK ingress
       shell: bash

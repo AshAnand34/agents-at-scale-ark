@@ -85,62 +85,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
     
-      - name: Deploy services
-        shell: bash
-        run: |
-          set -euo pipefail
-          SERVICES=(
-            "ark-api"
-            "ark-api-a2a"
-            "ark-dashboard"
-            "ark-mcp"
-            "localhost-gateway"
-          )
-
-          for NAME in "${SERVICES[@]}"; do
-
-            # compute image repository per service
-            IMAGE_REPO_INPUT="${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}"
-            if [ -n "${IMAGE_REPO_INPUT}" ]; then
-              IMAGE_REPO="${IMAGE_REPO_INPUT}/${NAME}"
-            else
-              IMAGE_REPO="${NAME}"
-            fi
-
-            echo "=== Deploying ${NAME} ==="
-            helm upgrade --install "${NAME}" "services/${NAME}/chart" \
-              --namespace "default" \
-              --create-namespace \
-              --set app.image.repository="${IMAGE_REPO}" \
-              --set app.image.tag="${{ needs.resolve_version.outputs.clean_version }}" \
-              --set app.image.pullPolicy="IfNotPresent" \
-              --wait \
-              --timeout="10m"
-          done
-
-      - name: Verify deployment
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "=== Checking deployment status ==="
-          echo "ARK Controller:"
-          if ! kubectl get pods -n ark-system -l control-plane=ark-controller; then
-            echo "Controller not found, showing all ark-system pods:"
-            kubectl get pods -n ark-system || true
-          fi
-          echo "ARK Services:"
-          kubectl get pods -n "default" -l app=ark-api || true
-          kubectl get pods -n "default" -l app=ark-api-a2a || true
-          kubectl get pods -n "default" -l app=ark-dashboard || true
-          echo "Service endpoints:"
-          kubectl get svc -n "default" ark-api ark-api-a2a ark-dashboard || true
-
-      - name: Setup ARK ingress
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Create ingress resource for ARK services
-          kubectl apply -f ark/scripts/ark_ingress.yml || true
-          echo "Ingress controller deployed"
-
-
+      - name: Deploy additional ARK services
+        uses: ./.github/actions/deploy-additional-services
+        with:
+          clean_version: ${{ needs.resolve_version.outputs.clean_version }}
+          image_registry: ${{ vars.DOCKER_REGISTRY || format('ghcr.io/{0}/{1}', github.repository_owner, github.event.repository.name) }}
+          namespace: default
+          pull_policy: IfNotPresent
+          timeout: 10m

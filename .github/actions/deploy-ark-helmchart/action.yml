@@ -1,4 +1,4 @@
-name: "Deploy ARK Helm Chart"
+name: "Deploy ARK-controller helm chart"
 description: "Download ARK Helm chart, ensure namespace/infra, install CRDs/cert-manager/gateway-api, deploy Helm release and apply RBAC. Authentication (kube/registry) must be done by caller workflow."
 inputs:
   version:

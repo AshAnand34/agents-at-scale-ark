@@ -5,26 +5,12 @@ metadata:
   namespace: default
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
   rules:
   - http:
       paths:
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: ark-api
-            port:
-              number: 80
-      - path: /dashboard
-        pathType: Prefix
-        backend:
-          service:
-            name: ark-dashboard
-            port:
-              number: 3000
       - path: /
         pathType: Prefix
         backend:
