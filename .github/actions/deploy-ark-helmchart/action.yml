@@ -11,6 +11,9 @@ inputs:
     description: "Chart filename pattern (defaults to ark-<clean_version>.tgz)"
     required: false
     default: ""
+  repository:
+    description: "GitHub repository to download release from (defaults to caller repo)"
+    required: false
   namespace:
     description: "Kubernetes namespace to deploy into"
     required: false
@@ -74,10 +77,10 @@ runs:
         if [ -n "${{ inputs.chart_filename }}" ]; then
           CHART_NAME="${{ inputs.chart_filename }}"
         else
-          CHART_NAME="ark-${CLEAN}.tgz"
+          CHART_NAME="ark-controller-${CLEAN}.tgz"
         fi
         echo "Downloading chart to ${CHART_NAME} for version: $VERSION"
-        gh release download "$VERSION" --pattern "$CHART_NAME" --repo "${{ github.repository }}"
+        gh release download "$VERSION" --pattern "$CHART_NAME" --repo "${{ inputs.repository || github.repository }}"
         ls -la "./${CHART_NAME}"
         echo "chart_name=${CHART_NAME}" >> $GITHUB_OUTPUT
       env:
@@ -142,7 +145,7 @@ runs:
         kubectl wait --for=condition=established --timeout=60s crd/a2aservers.ark.mckinsey.com
         kubectl wait --for=condition=established --timeout=60s crd/executionengines.ark.mckinsey.com
 
-    - name: Deploy ARK chart
+    - name: Deploy ARK-controller chart
       shell: bash
       run: |
         CHART="./${{ steps.download_chart.outputs.chart_name }}"
