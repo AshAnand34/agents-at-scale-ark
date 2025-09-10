@@ -22,13 +22,14 @@ inputs:
     default: "5m"
 runs:
   using: "composite"
+  env:
+    SERVICES_LIST: "ark-api ark-api-a2a ark-dashboard"
   steps:
     - name: Deploy services
       shell: bash
       run: |
         set -euo pipefail
-        echo "SERVICES_LIST=ark-api ark-api-a2a ark-dashboard ark-mcp" >> $GITHUB_ENV
-
+        echo "=== Deploying additional ARK services ==="
         for NAME in $SERVICES_LIST; do
 
           # compute image repository per service
