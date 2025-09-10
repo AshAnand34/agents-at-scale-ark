@@ -197,7 +197,7 @@ spec:
                 - Pending
                 - Ready
                 - Succeeded
-                - Failed
+                - Error
                 - Unknown
                 type: string
             type: object
