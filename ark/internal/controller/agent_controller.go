@@ -71,7 +71,6 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		log.Info("Updated agent status", "phase", newPhase)
 	}
 
-	// Requeue if still pending to check for dependency resolution
 	// Note: We also watch for Tool/Model events, so this is just a fallback
 	if newPhase == arkv1alpha1.AgentPhasePending {
 		return ctrl.Result{RequeueAfter: 5 * time.Minute}, nil // Reduced frequency since we have event-driven updates
