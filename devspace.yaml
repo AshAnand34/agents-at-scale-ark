@@ -95,8 +95,7 @@ deployments:
           container:
             image:
               repository: ${runtime.images.ark-controller.image}
-              tag: ${runtime.images.ark-controller.tag}            
-              pullPolicy: Always
+              tag: ${runtime.images.ark-controller.tag}
             resources:
               limits:
                 memory: "2048Mi"
