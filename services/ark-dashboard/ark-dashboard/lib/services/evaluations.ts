@@ -315,117 +315,25 @@ export const evaluationsService = {
    * Get evaluations by query reference
    */
   async getByQueryRef(namespace: string, queryName: string, enhanced: boolean = false): Promise<Evaluation[] | EnhancedEvaluationResponse[]> {
-    try {
-      // Fetch all evaluations with details to access the queryRef in spec
-      const allEvaluations = enhanced 
-        ? (await apiClient.get<EnhancedEvaluationListResponse>(`/api/v1/namespaces/${namespace}/evaluations?enhanced=true`)).items
-        : await this.getAll(namespace)
-      
-      // We need to fetch detailed info for each evaluation to check the queryRef
-      // This is inefficient but necessary since the list API doesn't include spec data
-      const matchingEvaluations: (Evaluation | EnhancedEvaluationResponse)[] = []
-      
-      for (const evaluation of allEvaluations) {
-        try {
-          // Fetch detailed evaluation to access the spec
-          const detailed = enhanced 
-            ? await this.getEnhancedDetailsByName(namespace, evaluation.name)
-            : await this.getDetailsByName(namespace, evaluation.name)
-          
-          if (detailed?.spec) {
-            // Check if this evaluation references the query
-            // The queryRef can be in different locations depending on evaluation type
-            const spec = detailed.spec as Record<string, unknown>
-            
-            // Check for queryRef in spec.config.queryRef (event evaluations)
-            const config = spec.config as Record<string, unknown> | undefined
-            const configQueryRef = config?.queryRef as { name?: string, namespace?: string } | undefined
-            if (configQueryRef?.name === queryName) {
-              matchingEvaluations.push(evaluation)
-              continue
-            }
-            
-            // Check for queryRef directly in spec (query evaluations)
-            const directQueryRef = spec.queryRef as { name?: string, namespace?: string } | undefined
-            if (directQueryRef?.name === queryName) {
-              matchingEvaluations.push(evaluation)
-            }
-          }
-        } catch (error) {
-          // If we can't fetch details for an evaluation, skip it
-          console.warn(`Failed to fetch details for evaluation ${evaluation.name}:`, error)
-        }
-      }
-      
-      return matchingEvaluations
-    } catch (error) {
-      console.error(`Failed to fetch evaluations for query ${queryName}:`, error)
-      return []
-    }
+    // Use the backend filter to efficiently get evaluations for a specific query
+    const url = enhanced 
+      ? `/api/v1/namespaces/${namespace}/evaluations?enhanced=true&query_ref=${encodeURIComponent(queryName)}`
+      : `/api/v1/namespaces/${namespace}/evaluations?query_ref=${encodeURIComponent(queryName)}`
+    
+    const response = enhanced 
+      ? await apiClient.get<EnhancedEvaluationListResponse>(url)
+      : await apiClient.get<EvaluationListResponse>(url)
+    
+    return response.items || []
   },
 
   /**
    * Get evaluation summary for a query
    */
   async getEvaluationSummary(namespace: string, queryName: string, enhanced: boolean = false): Promise<QueryEvaluationSummary> {
-    try {
-      const evaluations = await this.getByQueryRef(namespace, queryName, enhanced)
-      
-      if (evaluations.length === 0) {
-        return {
-          total: 0,
-          passed: 0,
-          failed: 0,
-          pending: 0,
-          status: 'none'
-        }
-      }
-      
-      let passed = 0
-      let failed = 0
-      let pending = 0
-      
-      evaluations.forEach(evaluation => {
-        const phase = evaluation.phase
-        const evaluationPassed = evaluation.passed
-        
-        if (phase === 'done') {
-          if (evaluationPassed === true) {
-            passed++
-          } else if (evaluationPassed === false) {
-            failed++
-          } else {
-            // Done but no pass/fail status
-            pending++
-          }
-        } else {
-          // Not done yet (running, error, etc.)
-          pending++
-        }
-      })
-      
-      const total = evaluations.length
-      let status: QueryEvaluationSummary['status']
-      
-      if (pending > 0) {
-        status = 'pending'
-      } else if (passed === total) {
-        status = 'all-passed'
-      } else if (failed === total) {
-        status = 'all-failed'
-      } else {
-        status = 'mixed'
-      }
-      
-      return {
-        total,
-        passed,
-        failed,
-        pending,
-        status
-      }
-    } catch (error) {
-      console.error(`Failed to get evaluation summary for query ${queryName}:`, error)
+    const evaluations = await this.getByQueryRef(namespace, queryName, enhanced)
+    
+    if (evaluations.length === 0) {
       return {
         total: 0,
         passed: 0,
@@ -433,6 +341,50 @@ export const evaluationsService = {
         pending: 0,
         status: 'none'
       }
+    }
+    
+    let passed = 0
+    let failed = 0
+    let pending = 0
+    
+    evaluations.forEach(evaluation => {
+      const phase = evaluation.phase
+      const evaluationPassed = evaluation.passed
+      
+      if (phase === 'done') {
+        if (evaluationPassed === true) {
+          passed++
+        } else if (evaluationPassed === false) {
+          failed++
+        } else {
+          // Done but no pass/fail status
+          pending++
+        }
+      } else {
+        // Not done yet (running, error, etc.)
+        pending++
+      }
+    })
+    
+    const total = evaluations.length
+    let status: QueryEvaluationSummary['status']
+    
+    if (pending > 0) {
+      status = 'pending'
+    } else if (passed === total) {
+      status = 'all-passed'
+    } else if (failed === total) {
+      status = 'all-failed'
+    } else {
+      status = 'mixed'
+    }
+    
+    return {
+      total,
+      passed,
+      failed,
+      pending,
+      status
     }
   }
 }

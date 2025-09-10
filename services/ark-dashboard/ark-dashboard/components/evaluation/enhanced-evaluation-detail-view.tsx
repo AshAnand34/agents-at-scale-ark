@@ -152,23 +152,6 @@ export function EnhancedEvaluationDetailView({
     initialLoad();
   }, [loadEvaluation]);
 
-  // Auto-refresh for running evaluation
-  useEffect(() => {
-    if (!evaluation) return;
-
-    const status = (evaluation.status as Record<string, unknown>)
-      ?.phase as string;
-    const isRunning = status === "running" || status === "evaluating";
-
-    if (!isRunning) return;
-
-    const intervalId = setInterval(() => {
-      loadEvaluation();
-    }, 5000); // Poll every 5 seconds when evaluation is running
-
-    return () => clearInterval(intervalId);
-  }, [evaluation, loadEvaluation]);
-
   const handleCancel = async () => {
     if (!evaluation) return;
 

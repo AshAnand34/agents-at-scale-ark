@@ -52,8 +52,7 @@ export const EvaluatorsSection = forwardRef<{ openAddEditor: () => void }, Evalu
 
   const handleCreateEvaluator = async (evaluator: EvaluatorCreateRequest & { id?: string }) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { id, ...createData } = evaluator
+      const { id: _, ...createData } = evaluator
       await evaluatorsService.create(namespace, createData)
       toast({
         variant: "success",

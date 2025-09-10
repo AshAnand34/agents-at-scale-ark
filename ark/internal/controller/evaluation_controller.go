@@ -1073,8 +1073,6 @@ func (r *EvaluationReconciler) processEventEvaluation(ctx context.Context, evalu
 	return ctrl.Result{}, nil
 }
 
-// All complex context extraction logic moved to genai/context_retrieval_helper.go
-
 // addContextToParameters adds contextual background information to evaluation parameters using the helper
 func (r *EvaluationReconciler) addContextToParameters(ctx context.Context, evaluation *arkv1alpha1.Evaluation, parameters map[string]string) map[string]string {
 	log := logf.FromContext(ctx)

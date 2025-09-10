@@ -484,22 +484,6 @@ function QueryDetailContent() {
     initialLoad();
   }, [loadQuery, isNew, targetTool, namespace]);
 
-  // Auto-refresh for running query
-  useEffect(() => {
-    if (isNew || !query) return;
-
-    const status = query.status?.phase;
-    const isRunning = status === "running" || status === "evaluating";
-
-    if (!isRunning) return;
-
-    const intervalId = setInterval(() => {
-      loadQuery();
-    }, 5000); // Poll every 5 seconds when query is running
-
-    return () => clearInterval(intervalId);
-  }, [query, isNew, loadQuery]);
-
   // Fetch tool schema when exactly one tool is selected
   useEffect(() => {
     const selectedTools =
