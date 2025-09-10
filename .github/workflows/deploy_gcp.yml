@@ -93,8 +93,8 @@ jobs:
             "ark-api"
             "ark-api-a2a"
             "ark-dashboard"
-            "evaluator-llm"
-            "postgres-memory"
+            "ark-mcp"
+            "localhost-gateway"
           )
 
           for NAME in "${SERVICES[@]}"; do
