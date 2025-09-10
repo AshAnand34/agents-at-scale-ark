@@ -34,7 +34,6 @@ runs:
           "ark-api"
           "ark-api-a2a"
           "ark-dashboard"
-          "executor-langchain"
           "evaluator-llm"
           "postgres-memory"
         )
