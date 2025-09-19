@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { AlertCircle, Plus, ChevronRight, ChevronsUpDown, Check } from "lucide-react"
+import { AlertCircle, Plus, ChevronRight, ChevronsUpDown, Check, ChevronsUpDownIcon, LogOut } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { CONFIGURATION_SECTIONS, OPERATION_SECTIONS, RUNTIME_SECTIONS } from "@/lib/constants/dashboard-icons"
 import {
@@ -33,6 +33,8 @@ import {
 import { toast } from "@/components/ui/use-toast"
 import { namespacesService, systemInfoService, type Namespace, type SystemInfo } from "@/lib/services"
 import { NamespaceEditor } from "@/components/editors"
+import { UserDetails } from "./user"
+import { signout } from "@/lib/auth/signout"
 
 export function AppSidebar() {
   const router = useRouter()
@@ -53,23 +55,30 @@ export function AppSidebar() {
     const loadInitialData = async () => {
       setLoading(true)
       try {
-        const [namespacesData, systemData] = await Promise.all([
-          namespacesService.getAll(),
-          systemInfoService.get()
+        // Load system info and get current context
+        const [systemData, context] = await Promise.all([
+          systemInfoService.get(),
+          namespacesService.getContext()
         ])
-        const filteredNamespaces = namespacesData.filter(ns => 
-          !['cert-manager', 'kube-node-lease', 'kube-system', 'kube-public'].includes(ns.name)
-        )
-        setNamespaces(filteredNamespaces)
+
         setSystemInfo(systemData)
+
+        // Use the detected namespace from context (backend handles fallback)
+        const selectedNamespace = context.namespace
+
+        // Show only the current namespace
+        const currentNamespaceOnly = [{
+          name: selectedNamespace,
+          id: 0
+        }]
+
+        setNamespaces(currentNamespaceOnly)
+        setNamespace(selectedNamespace)
         setNamespaceResolved(true)
-        
-        // Read namespace from URL if present
-        const urlParams = new URLSearchParams(window.location.search)
-        const urlNamespace = urlParams.get('namespace')
-        if (urlNamespace && filteredNamespaces.some(ns => ns.name === urlNamespace)) {
-          setNamespace(urlNamespace)
-        }
+
+        // Update URL to reflect the detected namespace
+        const currentPath = pathname
+        router.push(`${currentPath}?namespace=${selectedNamespace}`)
       } catch (error) {
         console.error("Failed to load initial data:", error)
       } finally {
@@ -78,7 +87,7 @@ export function AppSidebar() {
     }
 
     loadInitialData()
-  }, [])
+  }, [router, pathname])
 
 
   const handleNamespaceSelect = (selectedNamespace: string) => {
@@ -97,11 +106,10 @@ export function AppSidebar() {
         description: `Successfully created namespace ${name}`
       })
       
-      const updatedNamespaces = await namespacesService.getAll()
-      const filteredNamespaces = updatedNamespaces.filter(ns => 
-        !['cert-manager', 'kube-node-lease', 'kube-system', 'kube-public'].includes(ns.name)
-      )
-      setNamespaces(filteredNamespaces)
+      // Always in single namespace mode, show only the newly created namespace
+      const newNamespace = { name, id: 0 }
+      setNamespaces([newNamespace])
+      
       handleNamespaceSelect(name)
     } catch (error) {
       toast({
@@ -297,25 +305,49 @@ export function AppSidebar() {
           </SidebarGroup>
         </SidebarContent>
         
-        {systemInfo && (
-          <SidebarFooter>
-            <div className="px-2 py-2 text-xs text-muted-foreground">
-              <p>
-                ARK {systemInfo.system_version} (
-                <a 
-                  href="/api/docs" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:text-blue-700 underline"
+        <SidebarFooter>
+          {systemInfo && (<div className="px-2 py-2 text-xs text-muted-foreground">
+            <p>
+              ARK {systemInfo.system_version} (
+              <a 
+                href="/api/docs" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:text-blue-700 underline"
+              >
+                APIs
+              </a>
+              )
+            </p>
+            <p>Kubernetes {systemInfo.kubernetes_version}</p>
+          </div>)}
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton className="h-12">
+                    <UserDetails/>
+                    <ChevronsUpDownIcon className="ml-auto"/>
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  side="right"
+                  align="end"
+                  className="w-[--radix-popper-anchor-width]"
                 >
-                  APIs
-                </a>
-                )
-              </p>
-              <p>Kubernetes {systemInfo.kubernetes_version}</p>
-            </div>
-          </SidebarFooter>
-        )}
+                  <DropdownMenuLabel>
+                    <UserDetails/>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator/>
+                  <DropdownMenuItem onClick={signout}>
+                    <LogOut/>
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
       </Sidebar>
       
       <NamespaceEditor
